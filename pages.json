@@ -1,0 +1,103 @@
+//tips: 新建页面,新建路由,需要重新编译,否则跳转报错
+
+{
+	"easycom": { //easycom,按需自动注册组件。原则上可以把所有页面引入组件方法删掉，会自动引入。
+		"autoscan": true,
+		"custom": {
+			"app-(.*)": "@/components/app-$1/app-$1.vue",
+			"uni-(.*)": "@/components/uni-$1/uni-$1.vue",
+			"^u-(.*)": "@/uview-ui/components/u-$1/u-$1.vue"
+		}
+	},
+	"pages": [{
+			"path": "pages/index/index",
+			"name": "home",
+			"title": "中曜集团",
+			"aliasPath": "/", //对于h5端你必须在首页加上aliasPath并设置为/
+			"style": {
+				"navigationBarTitleText": "中曜集团",
+				"enablePullDownRefresh": true
+			},
+			"meta": {
+				"auth": false, //需要登录
+				"async": true //是否同步
+			}
+		},{
+			"path": "pages/index/register",
+			"name": "register",
+			"style": {
+				"navigationBarTitleText": "注册",
+				"navigationStyle": "custom"
+			},
+			"meta": {
+				"auth": false, //需要登录
+				"async": true //是否同步
+			}
+		}
+	],
+	// 分包加载
+	"subPackages": [{
+		"root": "pages/contact",
+		"pages": [
+			{
+				"path":"index",
+				"style": {
+					"navigationBarTitleText": "人员名单"
+				}
+			}
+		]
+	},{
+		"root": "pages/detail",
+		"pages": [
+			{
+				"path": "budget",
+				"style": {
+					"navigationBarTitleText": "预算外费用申请"
+				}
+			},
+			{
+				"path": "cost",
+				"style": {
+					"navigationBarTitleText": "费用报销"
+				}
+			},
+			{
+				"path": "payment",
+				"style": {
+					"navigationBarTitleText": "付款申请"
+				}
+			},
+			{
+				"path": "transfer",
+				"style": {
+					"navigationBarTitleText": "资金调拨单"
+				}
+			},
+			{
+				"path": "special",
+				"style": {
+					"navigationBarTitleText": "特殊事项申请"
+				}
+			}
+		]
+	}],
+	// 分包预加载规则
+	/* "preloadRule": {
+		"pages/detail": {
+			"network": "all",
+			"packages": ["__APP__"]
+		}
+	}, */
+	// 默认导航栏样式
+	"globalStyle": {
+		"navigationBarTextStyle": "black",
+		"navigationBarTitleText": "",
+		"navigationBarBackgroundColor": "#fff",
+		"backgroundColor": "#fff",
+		"navigationStyle": "default", //默认是default，即带有原生导航栏。custom,取消导航栏。
+		"SplitLineStyles": {
+			"color": "#ccc",
+			"height": "1px"
+		}
+	}
+}
