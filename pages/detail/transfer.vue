@@ -4,7 +4,6 @@
 			<view class="a-cell-title"><view class="a-cell-title-left" :class="{ required: !isReview }">调拨事由</view></view>
 			<view class="a-cell-bd"><textarea :disabled="isReview" v-model="transferReason" /></view>
 		</view>
-
 		<view class="a-cell-box">
 			<view class="a-cell-title">
 				<view class="a-cell-title-left" :class="{ required: !isReview }">调拨金额</view>
@@ -14,7 +13,6 @@
 			</view>
 			<view class="a-cell-bd placeholder">{{ transferCurrency || '' }}</view>
 		</view>
-
 		<view class="a-cell-box">
 			<view class="a-cell-title">
 				<view class="a-cell-title-left" :class="{ required: !isReview }">调拨日期</view>
@@ -25,21 +23,18 @@
 				</view>
 			</view>
 		</view>
-
 		<view class="a-cell-box">
 			<view class="a-cell-title">
 				<view class="a-cell-title-left" :class="{ required: !isReview }">付款账号</view>
 				<view class="a-cell-title-right"><input type="text" :disabled="isReview" v-model="payAccount" /></view>
 			</view>
 		</view>
-
 		<view class="a-cell-box">
 			<view class="a-cell-title">
 				<view class="a-cell-title-left" :class="{ required: !isReview }">收款账户</view>
 				<view class="a-cell-title-right"><input type="text" :disabled="isReview" v-model="repayAccount" /></view>
 			</view>
 		</view>
-
 		<view class="a-cell-box">
 			<view class="a-cell-title"><view class="a-cell-title-left">备注说明</view></view>
 			<view class="a-cell-bd"><textarea :disabled="isReview" v-model="reason" /></view>
@@ -52,7 +47,6 @@
 				<uni-file-picker v-model="imageValue" :readonly="isReview ? true : false" file-mediatype="image" mode="grid" file-extname="png,jpg" />
 			</view>
 		</view>
-
 		<!-- <view class="flex" v-if="!isReview">
 			<button class="u-flex-1" type="default" @tap="jump(-1)">取消</button>
 			<button class="u-flex-1" type="primary" @tap="save">保存</button>
@@ -61,8 +55,8 @@
 			<view class="a-cell-title">
 				<view class="a-cell-title-left" :class="{ required: !isReview }">审核人</view>
 				<view class="a-cell-title-right">
-					<picker :disabled="isReview" @change="handleUserPicker" :value="userIndex" :range="userList" range-key="name">
-						<view class="uni-input">{{ userList[userIndex].name }}</view>
+					<picker :disabled="isReview" @change="handleUserPicker" :value="fnumber" :range="userList" range-key="fname">
+						<view class="uni-input">{{ userList[fnumber].fname }}</view>
 					</picker>
 				</view>
 			</view>
@@ -73,8 +67,8 @@
 		<view class="flex">
 			<button class="u-flex-1" type="default" @tap="jump(-1)">取消</button>
 			<button class="u-flex-1" type="primary" @tap="save">保存</button>
-			<button class="u-flex-1" type="primary" @tap="pay">付款</button>
-			<button class="u-flex-1" type="primary" @tap="comif">完成</button>
+			<button class="u-flex-1" type="primary" v-if="isReview" @tap="pay">付款</button>
+			<button class="u-flex-1" type="primary" v-if="isReview" @tap="comif">完成</button>
 		</view>
 	</view>
 </template>
@@ -105,26 +99,11 @@ export default {
 				}
 			],
 			// 费用类型
-			userIndex: 0,
+			fnumber: 0,
 			jinDuList: [],
 			// 费用类型数据
 			userList: [
-				{
-					value: '1',
-					name: '张三'
-				},
-				{
-					value: '2',
-					name: '李四'
-				},
-				{
-					value: '3',
-					name: '王五'
-				},
-				{
-					value: '4',
-					name: 'boss'
-				}
+				
 			],
 			// 金额的中文大写
 			transferCurrency: null,
@@ -157,6 +136,7 @@ export default {
 		this.isReview = query.isReview;
 		this.params = { ...query };
 		this.getJinDu();
+		this.getUserList();
 		if (this.isReview) {
 			this.transferReason = query.storyDescribe;
 			this.transferMoney = query.amount;
@@ -165,7 +145,7 @@ export default {
 			this.repayAccount = query.getAccount;
 			this.reason = query.remark;
 			this.userInfo.levels = query.applyName;
-			this.userIndex = this.userList.indexOf(query.nextApprovalPeople);
+			/* this.fnumber = this.userList.indexOf(query.nextApprovalPeople); */
 		}
 		uni.$on('handleCheckbox', res => {
 			if (res.type == 'approver') {
@@ -188,8 +168,16 @@ export default {
 	},
 	created() {},
 	methods: {
+		getUserList(){
+			this.$api('user.approvalPerson', {
+			}).then(res => {
+				if (res.flag) {
+					this.userList = res.data;
+				}
+			});
+		},
 		handleUserPicker(e) {
-			this.userIndex = e.detail.value;
+			this.fnumber =  e.detail.value;
 		},
 		save() {
 			const duration = 1500,
@@ -220,7 +208,7 @@ export default {
 						status: 0,
 						orderType: '资金调拨',
 						applyName: this.userInfo.levels,
-						nextApprovalPeople: this.userList[this.userIndex].name
+						nextApprovalPeople: this.userList[this.fnumber].name
 					}).then(res => {
 						if (res.flag) {
 							uni.showLoading({

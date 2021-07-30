@@ -95,14 +95,22 @@ export default {
 	created() {
 		// 接口请求等一系列操作....
 		const { contactList, steps } = mock;
-		this.contactList = contactList;
-		this.conperList = contactList;
+		this.getUserList();
 		this.stepList = this.jdData;
 		console.log(this.stepList)
 		// 根据选中人员数据去拼接人名
 		// this.getApprover();
 	},
 	methods: {
+		getUserList(){
+			this.$api('user.approvalPerson', {
+			}).then(res => {
+				if (res.flag) {
+					this.contactList = res.data;
+					this.conperList = res.data;
+				}
+			});
+		},
 		// 流程改变
 		handleStep() {
 			if (this.stepActive < this.stepList.length - 1) {

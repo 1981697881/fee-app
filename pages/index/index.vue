@@ -32,8 +32,8 @@
 						</view>
 						<template v-slot:footer>
 							<view class="flex justify-between">
-								<view v-if="item.status == '0'" class="primary text-align-right" @tap="handleSave(item)">提交</view>
-								<view v-else class="text-cyan text-align-right">{{item.status == '1'?'已通过':'已提交'}} </view>
+								<!-- <view v-if="item.status == '0'" class="primary text-align-right" @tap="handleSave(item)">提交</view> -->
+								<view  class="text-cyan text-align-right">{{item.status == '1'?'已通过':'已提交'}} </view>
 								<view class="primary text-align-right" @tap="handleUrge">催审</view>
 							</view>
 						</template>
@@ -86,13 +86,24 @@ export default {
 		this.getUserDetails();
 	},
 	created() {
+		let that = this
 		this.$api('user.findUserAuthority',{
-			applyName: this.userInfo.levels,
+			openId: uni.getStorageSync('openid'),
 		}).then(res => {
 			if (!res.flag) {
-				this.$Router.push({
-					path: '/pages/index/register',
-					query: {
+				uni.showToast({
+					title: res.msg || '注册成功',
+					icon: 'success',
+					duration: 2000,
+					mask: true,
+					success: function() {
+						setTimeout(function() {
+							that.$Router.replace({
+								path: '/pages/index/register',
+								query: {
+								}
+							});
+						}, 1000);
 					}
 				});
 			}
@@ -165,6 +176,12 @@ export default {
 		// 点击tab切换页
 		handleTab(index) {
 			this.current = index;
+			console.log(this.current)
+			if(this.current == 0){
+				this.getApprovalList();
+			}else{
+				this.getApproveList();
+			}
 		},
 		// 手动滑动tab页
 		// TODO 停用 - swiper自适应高度的问题没有解决

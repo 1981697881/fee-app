@@ -4,7 +4,7 @@
 export default {
 	/** 初始化 ↓ **/
 	init: {
-		url: 'index/init',
+		url: 'baoxiao/index/init',
 		auth: false,
 		method: 'GET',
 		// desc: '初始化数据',
@@ -12,43 +12,43 @@ export default {
 	/** 审批 ↓ **/
 	approve:{
 		applyOrderList:{
-			url: 'apply/applyOrderList',
+			url: 'baoxiao//applyApprovalRecord/applyApprovalOrderList',
 			auth: true,
 			method: 'POST',
-			// desc: '获取审批列表',
+			// desc: '获取申请列表',
 		},
 		approvalOrderList:{
-			url: 'approval/approvalOrderList',
+			url: 'baoxiao/applyApprovalRecord/applyApprovalOrderList',
 			auth: true,
 			method: 'POST',
 			// desc: '获取审批列表',
-		},
+		}, 
 		applyOrder:{
-			url: 'apply/applyOrder',
+			url: 'baoxiao/applyApprovalRecord/addApplyApprovalOrder',
 			auth: true,
 			method: 'POST',
 			// desc: '保存',
 		},
-		approvalOrder:{
-			url: 'approval/approvalOrder',
+		/* approvalOrder:{
+			url: 'baoxiao/approval/approvalOrder',
 			auth: true,
 			method: 'POST',
 			// desc: '提交',
-		},
+		}, */
 		orderApproval:{
-			url: 'approval/orderApproval',
+			url: 'baoxiao/applyApprovalRecord/approvalOrder',
 			auth: true,
 			method: 'POST',
 			// desc: '审核',
 		},
 		jinDu:{
-			url: 'apply/jinDu',
+			url: 'baoxiao/applyApprovalRecord/approvalOrderJinDu',
 			auth: true,
 			method: 'POST',
 			// desc: '审核进度',
 		},
 		updateOrderApproval:{
-			url: 'approval/updateOrderApproval ',
+			url: 'baoxiao/approval/updateOrderApproval ',
 			auth: true,
 			method: 'POST',
 			// desc: '审核完成',
@@ -57,7 +57,7 @@ export default {
 	/** 聊天 ↓ **/
 	chat: {
 		init: {
-			url: 'chat.index/init',
+			url: 'baoxiao/chat.index/init',
 			auth: false,
 			method: 'GET',
 			// desc: '初始化聊天配置',
@@ -67,7 +67,7 @@ export default {
 
 	/** 上传图片 ↓ **/
 	upload: {
-		url: 'index/upload',
+		url: 'baoxiao/index/upload',
 		auth: true,
 		method: 'POST',
 		// desc: '上传',
@@ -75,7 +75,7 @@ export default {
 
 	/** 上传Base64图片 ↓ **/
 	uploadBase64: {
-		url: 'index/uploadBase64',
+		url: 'baoxiao/index/uploadBase64',
 		auth: false,
 		method: 'POST',
 		// desc: '上传Base64位图片',
@@ -83,7 +83,7 @@ export default {
 
 	/** 消息订阅模板 ↓ **/
 	messageIds: {
-		url: 'notification/template',
+		url: 'baoxiao/notification/template',
 		auth: true,
 		method: 'GET',
 		// desc: '订阅消息模板ids',
@@ -95,7 +95,7 @@ export default {
 	/** 微信Jssdk ↓ **/
 	wechat: {
 		jssdk: {
-			url: 'wechat/jssdk',
+			url: 'baoxiao/wechat/jssdk',
 			auth: false,
 			method: 'POST',
 			// desc: '微信Jssdk',
@@ -106,7 +106,7 @@ export default {
 
 	/** 富文本  ↓ **/
 	richtext: {
-		url: 'index/richtext',
+		url: 'baoxiao/index/richtext',
 		auth: false,
 		method: 'GET',
 		// desc: '富文本数据',
@@ -116,53 +116,58 @@ export default {
 	/** 用户 ↓ **/
 	user: {
 		member: {
-			url: 'member/loginMember',
+			url: 'baoxiao/member/loginMember',
 			auth: true,
 			method: 'POST',
 			// desc: '用户信息',
 		},findUserAuthority: {
-			url: 'member/findUserAuthority',
+			url: 'baoxiao/member/findUserAuthority',
 			auth: true,
 			method: 'POST',
 			// desc: ' 查询当前用户是否绑定权限职员',
 		},setUserAuthority: {
-			url: 'member/setUserAuthority',
+			url: 'baoxiao/member/setUserAuthority',
 			auth: true,
 			method: 'POST',
 			// desc: ' 当前用户绑定权限职员',
+		},approvalPerson: {
+			url: 'baoxiao/applyApprovalRecord/approvalPerson',
+			auth: true,
+			method: 'POST',
+			// desc: '查询职员',
 		},
 		info: {
-			url: 'user',
+			url: 'baoxiao/user',
 			auth: true,
 			method: 'GET',
 			// desc: '用户信息',
 		},
 		register: {
-			url: 'user/register',
+			url: 'baoxiao/user/register',
 			auth: false,
 			method: 'POST',
 			// desc: '用户注册',
 		},
 		getWxMiniProgramSessionKey: {
-			url: 'weChat/memberAuthorize',
+			url: 'baoxiao/weChat/memberAuthorize',
 			auth: false,
 			method: 'POST',
 			// desc: '获取用户session_key',
 		},
 		wxMiniProgramLogin: {
-			url: 'weChat/memberLogin',
+			url: 'baoxiao/weChat/memberLogin',
 			auth: false,
 			method: 'POST',
 			// desc: '微信小程序登录',
 		},
 		getWxMiniPhoneNumber: {
-			url: 'phone/phoneNumber',
+			url: 'baoxiao/phone/phoneNumber',
 			auth: false,
 			method: 'POST',
 			// desc: '获取用户手机号码',
 		},
 		forgot: {
-			url: 'user/forgot',
+			url: 'baoxiao/user/forgot',
 			auth: false,
 			method: 'POST',
 			// desc: '忘记密码',
@@ -172,7 +177,7 @@ export default {
 	/** 分享 ↓ **/
 	share: {
 		add: {
-			url: 'share/add',
+			url: 'baoxiao/share/add',
 			auth: false,
 			method: 'POST',
 			// desc: '添加分享记录',
@@ -182,37 +187,37 @@ export default {
 	/** 位置 ↓ **/
 	address: {
 		area: {
-			url: 'address/area',
+			url: 'baoxiao/address/area',
 			auth: false,
 			method: 'GET',
 			// desc: '省市区',
 		},
 		list: {
-			url: 'address',
+			url: 'baoxiao/address',
 			auth: true,
 			method: 'GET',
 			// desc: '地址列表',
 		},
 		edit: {
-			url: 'address/edit',
+			url: 'baoxiao/address/edit',
 			auth: true,
 			method: 'POST',
 			// desc: '修改地址',
 		},
 		defaults: {
-			url: 'address/defaults',
+			url: 'baoxiao/address/defaults',
 			auth: true,
 			method: 'GET',
 			// desc: '默认地址',
 		},
 		info: {
-			url: 'address/info',
+			url: 'baoxiao/address/info',
 			auth: true,
 			method: 'GET',
 			// desc: '地址详情',
 		},
 		del: {
-			url: 'address/del',
+			url: 'baoxiao/address/del',
 			auth: true,
 			method: 'POST',
 			// desc: '删除',
@@ -222,7 +227,7 @@ export default {
 	/** 短信 ↓ **/
 	sms: {
 		send: {
-			url: 'sms/send',
+			url: 'baoxiao/sms/send',
 			auth: false,
 			method: 'POST',
 			// desc: '发送短信',
@@ -232,7 +237,7 @@ export default {
 	/** 常见问题 ↓ **/
 	faq: {
 		list: {
-			url: 'faq',
+			url: 'baoxiao/faq',
 			auth: false,
 			method: 'GET',
 			// desc: '常见问题列表',
@@ -242,27 +247,22 @@ export default {
 	/** 意见反馈 ↓ **/
 	feedback: {
 		type: {
-			url: 'feedback/type',
+			url: 'baoxiao/feedback/type',
 			auth: true,
 			method: 'GET',
 			// desc: '意见反馈类型',
 		},
 		add: {
-			url: 'feedback/add',
+			url: 'baoxiao/feedback/add',
 			auth: true,
 			method: 'POST',
 			// desc: '提交意见',
 		},
 	},
-
-	
-
-	
-
 	/** 支付 ↓ **/
 	pay: {
 		prepay: {
-			url: 'pay/prepay',
+			url: 'baoxiao/pay/prepay',
 			auth: true,
 			method: 'POST',
 			// desc: '发起支付',
