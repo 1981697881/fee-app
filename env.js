@@ -5,8 +5,8 @@
 
 
 const ENV_BASE_URL = {
-	development: 'http://gzfzdev.com:50020', //开发环境
-	production: 'http://gzfzdev.com:50020', //生产环境
+	development: 'http://test.gzfzdev.com:8989', //开发环境
+	production: 'http://test.gzfzdev.com:8989', //生产环境
 }
 const ENV_API_URL = {
 	development: `${ENV_BASE_URL.development}/`, //开发环境

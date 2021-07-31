@@ -5,8 +5,10 @@
 		<view class="container">
 			<view class="margin-box">
 				<u-grid :col="3">
+					<!--  -->
 					<u-grid-item v-for="(item, index) in meau" :custom-style="{ padding: '30px 0', textAlign: 'center' }" @tap="jump(item.path)" :key="index">
-						<uni-icons :type="item.icon"></uni-icons>
+						<!-- <uni-icons :type="item.icon"></uni-icons> -->
+						<text class="lg text-gray" :class="'cuIcon-' + item.icon"></text>
 						<view class="grid-text">{{ item.name }}</view>
 					</u-grid-item>
 				</u-grid>
@@ -14,9 +16,16 @@
 			<view class="margin-box">
 				<u-tabs :list="tabList" :is-scroll="false" :current="current" @change="handleTab" :show-bar="false"></u-tabs>
 				<view v-if="current == 0">
-					<uni-card v-for="(item, index) in preview" :title="item.orderType" :extra="item.applyName" :key="index" note="一定要有这个属性才可以用插槽..." @tap="jump('/pages/detail/transfer', {isReview:true,order: item})">
+					<uni-card
+						v-for="(item, index) in preview"
+						:title="getOrderType(item.orderType)"
+						:extra="item.applyPersonFname"
+						:key="index"
+						note="一定要有这个属性才可以用插槽..."
+						@tap="clickCart({ isReview: true, order: item })"
+					>
 						<view class="flex">
-							<view class="u-flex-1">上一级审批人: {{ item.preApprover || '暂无' }}</view>
+							<view class="u-flex-1 text-cut">上一级审批人: {{ item.sapprovalPersons || '暂无' }}</view>
 							<view class="">滞留: {{ item.currentStopTime || 0 }}/分钟</view>
 						</view>
 						<template v-slot:footer>
@@ -25,15 +34,15 @@
 					</uni-card>
 				</view>
 				<view v-else>
-					<uni-card v-for="(item, index) in review" :title="item.orderType" :extra="item.flittingDate" :key="index" note="一定要有这个属性才可以用插槽..." >
+					<uni-card v-for="(item, index) in review" @tap="clickCartT({ isReview: true, order: item })" :title="getOrderType(item.orderType)" :extra="item.createDate" :key="index" note="一定要有这个属性才可以用插槽...">
 						<view class="flex">
-							<view class="u-flex-1">待审批人: {{ item.nextApprovalPeople || '暂无'}}</view>
-							<view class="">滞留: {{ item.currentStopTime || 0}}/分钟</view>
+							<view class="u-flex-1 text-cut">待审批人: {{ item.nextApprovalFname || '暂无' }}</view>
+							<view class="">滞留: {{ item.currentStopTime || 0 }}/分钟</view>
 						</view>
 						<template v-slot:footer>
 							<view class="flex justify-between">
 								<!-- <view v-if="item.status == '0'" class="primary text-align-right" @tap="handleSave(item)">提交</view> -->
-								<view  class="text-cyan text-align-right">{{item.status == '1'?'已通过':'已提交'}} </view>
+								<view class="text-cyan text-align-right">{{ getStatus(item.status) }}</view>
 								<view class="primary text-align-right" @tap="handleUrge">催审</view>
 							</view>
 						</template>
@@ -80,10 +89,10 @@ export default {
 	// 监听页面加载，其参数为上个页面传递的数据
 	onLoad(options) {},
 	// 监听页面显示。页面每次出现在屏幕上都触发，包括从下级页面点返回露出当前页面
-	onShow() {
+	async onShow() {
+		await this.getUserDetails();
 		this.getApproveList();
 		this.getApprovalList();
-		this.getUserDetails();
 	},
 	created() {
 		let that = this
@@ -115,14 +124,87 @@ export default {
 	computed: {
 		...mapState({
 			userInfo: state => state.user.userInfo
-		})
+		}),
 	},
-	methods: { 
+	methods: {
 		...mapActions(['getUserDetails']),
+		getStatus(val){
+			let status = ''
+			switch(val){
+			    case '1':
+					status = "已通过"
+			        break;
+			    case '2':
+					status = "已驳回，需重新申请"
+			        break;
+			    default:
+					status = "已提交"
+			}
+			return status;
+		},
+		clickCart(value){
+			switch(value.order.orderType){
+			    case '0':
+					this.jump('/pages/detail/cost', value)
+			        break;
+			    case '1':
+					this.jump('/pages/detail/payment', value)
+			        break;
+				case '2':
+					this.jump('/pages/detail/budget', value)
+			        break;
+				case '3':
+					this.jump('/pages/detail/special', value)
+			        break;
+			    default:
+					this.jump('/pages/detail/transfer', value)
+			}
+			
+		},
+		clickCartT(value){
+			if(value.order.status == '2'){
+				switch(value.order.orderType){
+				    case '0':
+						this.jump('/pages/detail/cost', value)
+				        break;
+				    case '1':
+						this.jump('/pages/detail/payment', value)
+				        break;
+					case '2':
+						this.jump('/pages/detail/budget', value)
+				        break;
+					case '3':
+						this.jump('/pages/detail/special', value)
+				        break;
+				    default:
+						this.jump('/pages/detail/transfer', value)
+				}
+			}
+		},
+		getOrderType(val){
+			let orderType = ''
+			switch(val){
+			    case '0':
+					orderType = "费用报销"
+			        break;
+			    case '1':
+					orderType = "付款申请"
+			        break;
+				case '2':
+					orderType = "预算外费用申请"
+			        break;
+				case '3':
+					orderType = "特殊事项申请"
+			        break;
+			    default:
+					orderType = "资金调拨申请"
+			}
+			return orderType;
+		},
 		getApproveList(){
 			let that = this;
 			that.$api('approve.applyOrderList',{
-				applyName: this.userInfo.levels,
+				applyPersonFnumber: this.userInfo.applyPersonFnumber,
 			}).then(res => {
 				if (res.flag) {
 					this.review = res.data;
@@ -133,7 +215,7 @@ export default {
 		getApprovalList(){
 			let that = this;
 			that.$api('approve.approvalOrderList',{
-				nextApprovalPeople: this.userInfo.levels,
+				nextApprovalFnumber: this.userInfo.applyPersonFnumber,
 			}).then(res => {
 				if (res.flag) {
 					this.preview = res.data;
@@ -176,7 +258,6 @@ export default {
 		// 点击tab切换页
 		handleTab(index) {
 			this.current = index;
-			console.log(this.current)
 			if(this.current == 0){
 				this.getApprovalList();
 			}else{
@@ -189,10 +270,16 @@ export default {
 		// 	this.current = current;
 		// }
 		// 路由跳转
-		jump(path, parmas) {
-			this.$Router.replace({
+		jump(path, params) {
+			let obj = {...params};
+			for(let i in obj.order){
+				if(obj.order[i] == null){
+					obj.order[i] = ''
+				}
+			}
+			this.$Router.push({
 				path: path,
-				query: parmas
+				query: obj
 			});
 		},
 		// 初始化

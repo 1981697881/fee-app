@@ -44,7 +44,7 @@
 			<view class="a-cell-title"><view class="a-cell-title-left ">附件</view></view>
 			<view class="a-cell-bd">
 				<!-- 参考https://ext.dcloud.net.cn/plugin?id=4079 -->
-				<uni-file-picker v-model="imageValue" :readonly="isReview ? true : false" file-mediatype="image" mode="grid" file-extname="png,jpg" />
+				<uni-file-picker v-model="imageValue" :limit="3" :readonly="isReview ? true : false" file-mediatype="image" mode="grid" file-extname="png,jpg" />
 			</view>
 		</view>
 		<!-- <view class="flex" v-if="!isReview">
@@ -55,9 +55,16 @@
 			<view class="a-cell-title">
 				<view class="a-cell-title-left" :class="{ required: !isReview }">审核人</view>
 				<view class="a-cell-title-right">
-					<picker :disabled="isReview" @change="handleUserPicker" :value="fnumber" :range="userList" range-key="fname">
-						<view class="uni-input">{{ userList[fnumber].fname }}</view>
-					</picker>
+					<ld-select
+						:multiple="true"
+						:list="userList"
+						label-key="fname"
+						value-key="fnumber"
+						placeholder="请选择"
+						clearable
+						v-model="userIndex"
+						@change="selectChange"
+					></ld-select>
 				</view>
 			</view>
 		</view>
@@ -67,8 +74,8 @@
 		<view class="flex">
 			<button class="u-flex-1" type="default" @tap="jump(-1)">取消</button>
 			<button class="u-flex-1" type="primary" @tap="save">保存</button>
-			<button class="u-flex-1" type="primary" v-if="isReview" @tap="pay">付款</button>
-			<button class="u-flex-1" type="primary" v-if="isReview" @tap="comif">完成</button>
+			<button class="u-flex-1" type="primary" v-if="isReview && this.userInfo.fpay" @tap="pay">付款</button>
+			<button class="u-flex-1" type="primary" v-if="isReview && this.userInfo.fend" @tap="comif">完成</button>
 		</view>
 	</view>
 </template>
@@ -77,34 +84,30 @@
 import mock from '@/common/mock/contact';
 import tools from '@/common/utils/tools';
 import approve from './components/approve';
+import ldSelect from '@/components/ld-select/ld-select';
 import { mapMutations, mapActions, mapState } from 'vuex';
 export default {
 	components: {
-		approve
+		approve,
+		ldSelect
 	},
 	data() {
 		const currentDate = this.getDate({
 			format: true
 		});
 		return {
-			// 调拨金额
-			transferMoney: null,
 			// 附件，目前只能上传图片，还不知道为什么上传后没file
 			imageValue: [
-				{
-					// 三个属性必填，否则影响组件显示
-					name: 'file.txt',
-					extname: 'txt',
-					url: 'https://img.cdn.aliyun.dcloud.net.cn/guide/uniapp/gh_33446d7f7a26_430.jpg'
-				}
-			],
-			// 费用类型
-			fnumber: 0,
-			jinDuList: [],
-			// 费用类型数据
-			userList: [
 				
 			],
+			orderType: 4,
+			// 费用类型
+			userIndex: [],
+			jinDuList: [],
+			// 费用类型数据
+			userList: [],
+			// 调拨金额
+			transferMoney: null,
 			// 金额的中文大写
 			transferCurrency: null,
 			// 调拨事由
@@ -133,19 +136,27 @@ export default {
 		// 拿出路由
 		const { query } = this.$Route;
 		// 判断入口是从 主页的默认入口进入还是 我的待审 - 点击进去详情审批
+		
 		this.isReview = query.isReview;
 		this.params = { ...query };
-		this.getJinDu();
+		if (this.isReview) {
+			this.getJinDu();
+		}
 		this.getUserList();
 		if (this.isReview) {
-			this.transferReason = query.storyDescribe;
-			this.transferMoney = query.amount;
-			this.transferDate = query.flittingDate;
-			this.payAccount = query.payAccount;
-			this.repayAccount = query.getAccount;
+			this.imageValue = JSON.parse(query.stringMaps)
+			this.imageValue.forEach((item)=>{
+				item.url = decodeURIComponent(item.url)
+			})
+			this.transferReason = query.applySituation;
+			this.transferMoney = query.cost;
+			this.transferDate = query.happenDate;
+			this.payAccount = query.paymentAccount;
+			this.repayAccount = query.collectionAccount;
 			this.reason = query.remark;
-			this.userInfo.levels = query.applyName;
-			/* this.fnumber = this.userList.indexOf(query.nextApprovalPeople); */
+			if(query.status == '2'){
+				this.isReview = false
+			}
 		}
 		uni.$on('handleCheckbox', res => {
 			if (res.type == 'approver') {
@@ -168,18 +179,31 @@ export default {
 	},
 	created() {},
 	methods: {
-		getUserList(){
-			this.$api('user.approvalPerson', {
-			}).then(res => {
+		selectChange(val) {
+			this.userIndex = val;
+		},
+		getUrlVars(url) {
+		    var hash;
+		    var myJson = {};
+		    var hashes = url.slice(url.indexOf('?') + 1).split('&');
+		    for (var i = 0; i < hashes.length; i++) {
+		        hash = hashes[i].split('=');
+		        myJson[hash[0]] = hash[1];
+		    }
+		    return myJson;
+		},
+		getUserList() {
+			this.$api('user.approvalPerson', {}).then(res => {
 				if (res.flag) {
 					this.userList = res.data;
 				}
 			});
 		},
 		handleUserPicker(e) {
-			this.fnumber =  e.detail.value;
+			this.userIndex = e.detail.value;
 		},
 		save() {
+			console.log(this.imageValue)
 			const duration = 1500,
 				{ jump, success, isReview } = this;
 			// 先判断是填写审批单/审批单据
@@ -189,7 +213,7 @@ export default {
 					msg: '审核成功'
 				});
 			} else {
-				if (!this.transferReason || !this.transferMoney > 0 || !this.payAccount || !this.repayAccount) {
+				if (!this.transferReason || !this.transferMoney > 0 || !this.payAccount || !this.repayAccount || !this.userIndex.length > 0) {
 					uni.showToast({
 						title: '请填写必填项',
 						mask: true,
@@ -197,64 +221,113 @@ export default {
 						duration
 					});
 				} else {
-					this.$api('approve.applyOrder', {
-						storyDescribe: this.transferReason,
-						amount: this.transferMoney,
-						flittingDate: this.transferDate,
-						payAccount: this.payAccount,
-						getAccount: this.repayAccount,
-						remark: this.reason,
-						photo: '',
-						status: 0,
-						orderType: '资金调拨',
-						applyName: this.userInfo.levels,
-						nextApprovalPeople: this.userList[this.fnumber].name
-					}).then(res => {
-						if (res.flag) {
-							uni.showLoading({
-								title: '提交中'
-							});
-							setTimeout(function() {
-								uni.hideLoading();
-								setTimeout(() => {
-									jump(-1);
-								}, 2000);
-							}, duration);
-						}
+					let params = [];
+					/* this.imageValue.forEach((item)=>{
+						item.url = encodeURIComponent(item.url)
+					}) */
+					this.userIndex.forEach(item => {
+						this.userList.forEach(user => {
+							if (user.fnumber == item) {
+								let obj = {
+									applySituation: this.transferReason,
+									cost: this.transferMoney,
+									happenDate: this.transferDate,
+									remark: this.reason,
+									enclosure: '',
+									stringMaps: JSON.stringify(this.imageValue),
+									paymentAccount: this.payAccount,
+									collectionAccount: this.repayAccount,
+									nextApprovalFnumber: item,
+									nextApprovalFname: user.fname,
+									orderType: this.orderType,
+									applyPersonFnumber: this.userInfo.applyPersonFnumber,
+									applyPersonFname: this.userInfo.applyPersonFname
+								};
+								params.push(obj);
+							}
+						});
 					});
+					if(this.userInfo.freq==1){
+						if(this.params.status == '2'){
+							params.forEach((item)=>{
+								item.id = this.params.id
+							})
+							this.$api('approve.approvalOrderAgain', params).then(res => {
+								if (res.flag) {
+									uni.showToast({
+										title: res.msg || '提交成功',
+										mask: true,
+										duration
+									});
+									setTimeout(() => {
+										jump(-1);
+									}, 1000);
+								}
+							});
+						}else{
+							this.$api('approve.applyOrder', params).then(res => {
+								if (res.flag) {
+									uni.showToast({
+										title: res.msg || '提交成功',
+										mask: true,
+										duration
+									});
+									setTimeout(() => {
+										jump(-1);
+									}, 1000);
+								}
+							});
+						}
+					}else{
+						uni.showToast({
+							title: '无申请权限~',
+							mask: true,
+							duration
+						});
+					}
 				}
 			}
 		},
+
 		// 审核
 		success(options) {
 			const duration = 1500,
 				{ jump } = this;
-			this.$api('approve.orderApproval', {
-				storyDescribe: this.transferReason,
-				amount: this.transferMoney,
-				id: this.params.id,
-				aid: this.params.aid,
-				flittingDate: this.transferDate,
-				payAccount: this.payAccount,
-				getAccount: this.repayAccount,
-				remark: this.reason,
-				photo: '',
-				status: this.params.status,
-				approvalOpinion: this.$refs['approve'].ideaList[this.$refs['approve'].ideaIndex].name,
-				nextApprovalPeople: this.$refs['approve'].approver,
-				copyPeople: this.$refs['approve'].copyer
-			}).then(res => {
-				if (res.flag) {
-					uni.showToast({
-						title: options.msg || '提交成功',
-						mask: true,
-						duration
-					});
-					setTimeout(() => {
-						jump(-1);
-					}, 2000);
-				}
-			});
+			
+			this.params.status=this.$refs['approve'].ideaList[this.$refs['approve'].ideaIndex].value
+			if(this.$refs['approve'].approverNumber!=undefined){
+				this.params.nextYuFnumber=this.$refs['approve'].approverNumber.split(',').filter(function(s) {
+					return s && s.trim();
+				})
+			}
+			if(this.$refs['approve'].approver.length!=undefined){
+				this.params.nextYuFname=this.$refs['approve'].approver.split(',').filter(function(s) {
+					return s && s.trim();
+				})
+			}
+			this.params.copyPeople = this.$refs['approve'].copyer
+			if(this.userInfo.faudit==1){
+				this.$api('approve.orderApproval', this.params
+				).then(res => {
+					if (res.flag) {
+						uni.showToast({
+							title: options.msg || '提交成功',
+							mask: true,
+							duration
+						});
+						setTimeout(() => {
+							jump(-1);
+						}, 2000);
+					}
+				});
+			}else{
+				uni.showToast({
+					title: '无审核权限~',
+					mask: true,
+					duration
+				});
+			}
+			
 		},
 		pay(options) {
 			const duration = 1500,
@@ -263,7 +336,7 @@ export default {
 				storyDescribe: this.transferReason,
 				amount: this.transferMoney,
 				id: this.params.id,
-				aid: this.params.aid,
+				parentId: this.params.parentId,
 				flittingDate: this.transferDate,
 				payAccount: this.payAccount,
 				getAccount: this.repayAccount,
@@ -272,7 +345,7 @@ export default {
 				status: 3,
 				approvalOpinion: this.$refs['approve'].ideaList[this.$refs['approve'].ideaIndex].name,
 				nextApprovalPeople: this.$refs['approve'].approver,
-				copyPeople: this.$refs['approve'].copyer
+				ccPerson: this.$refs['approve'].copyer
 			}).then(res => {
 				if (res.flag) {
 					uni.showToast({
@@ -293,7 +366,7 @@ export default {
 				storyDescribe: this.transferReason,
 				amount: this.transferMoney,
 				id: this.params.id,
-				aid: this.params.aid,
+				parentId: this.params.parentId,
 				flittingDate: this.transferDate,
 				payAccount: this.payAccount,
 				getAccount: this.repayAccount,
@@ -318,7 +391,7 @@ export default {
 		},
 		getJinDu() {
 			this.$api('approve.jinDu', {
-				id: this.params.aid
+				parentId: this.params.parentId
 			}).then(res => {
 				if (res.flag) {
 					this.$refs['approve'].stepList = res.data;
@@ -369,12 +442,14 @@ export default {
 			this.typeIndex = e.detail.value;
 		},
 		jump(path, parmas) {
+			console.log();
 			// 返回上一页
 			if (path == -1) {
-				uni.navigateBack({ delta: 1 });
+				this.$Router.back();
 			} else {
-				uni.navigateTo({
-					url: path
+				this.$Router.push({
+					path: path,
+					query: parmas
 				});
 			}
 		}

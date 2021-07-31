@@ -3,9 +3,9 @@
 		<!-- 补搜索 -->
 		<view class="a-cell-box" style="margin-bottom: 100rpx;">
 			<checkbox-group ref="checkbox" @change="checkboxChange">
-				<label class="a-cell-title" v-for="item in items" :key="item.value">
-					<view class="a-cell-title-left"><checkbox :value="item.value" :checked="item.checked" style="transform:scale(0.7)" /></view>
-					<view class="a-cell-title-right">{{ item.name }}</view>
+				<label class="a-cell-title" v-for="item in items" :key="item.fnumber">
+					<view class="a-cell-title-left"><checkbox :value="item.fnumber" :checked="item.checked" style="transform:scale(0.7)" /></view>
+					<view class="a-cell-title-right">{{ item.fname }}</view>
 				</label>
 			</checkbox-group>
 		</view>
@@ -76,7 +76,7 @@ export default {
 			let count = 0;
 			for (var i = 0, lenI = items.length; i < lenI; ++i) {
 				const item = items[i];
-				if (values.indexOf(item.value) != -1) {
+				if (values.indexOf(item.fnumber) != -1) {
 					count++;
 					this.$set(item, 'checked', true);
 				} else {

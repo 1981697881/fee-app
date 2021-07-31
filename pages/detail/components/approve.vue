@@ -59,6 +59,7 @@ export default {
 		return {
 			// 审批人
 			approver: '',
+			fnumber: '',
 			// 抄送
 			copyer: '',
 			// 瀑布式流程的当前进度
@@ -70,19 +71,24 @@ export default {
 			// 审批意见下拉框数据
 			ideaList: [
 				{
-					name: '同意'
+					name: '同意',
+					value: 1,
 				},
 				{
-					name: '不同意打回'
+					name: '不同意打回',
+					value: 2
 				},
 				{
-					name: '不同意终止'
+					name: '不同意终止',
+					value: 3
 				},
 				{
-					name: '同意并终止'
+					name: '同意并终止',
+					value: 4
 				},
 				{
-					name: '支付完成'
+					name: '支付完成',
+					value: 5
 				}
 			],
 			// 人员列表名单数据
@@ -97,7 +103,7 @@ export default {
 		const { contactList, steps } = mock;
 		this.getUserList();
 		this.stepList = this.jdData;
-		console.log(this.stepList)
+		console.log(this.ideaIndex)
 		// 根据选中人员数据去拼接人名
 		// this.getApprover();
 	},
@@ -126,24 +132,28 @@ export default {
 		getApprover: function() {
 			// 清空展示名字的字段
 			this.approver = '';
+			this.approverNumber = '';
 			// 获取选中的审批人
 			for (let i in this.contactList) {
-				const { checked, name } = this.contactList[i];
+				const { checked, fname,fnumber } = this.contactList[i];
 				if (checked) {
 					// 拼接审批人/抄送人的名字
-					this.approver += `${name}, `;
+					this.approver += `${fname}, `;
+					this.approverNumber += `${fnumber}, `;
 				}
 			}
 		},
 		getCopyer: function() {
 			// 清空展示名字的字段
 			this.copyer = '';
+			this.copyerNumber = '';
 			// 获取选中的抄送人
 			for (let i in this.conperList) {
-				const { checked, name } = this.conperList[i];
+				const { checked, fname,fnumber } = this.conperList[i];
 				if (checked) {
 					// 拼接审批人/抄送人的名字
-					this.copyer += `${name}, `;
+					this.copyer += `${fname}, `;
+					this.copyerNumber += `${fnumber}, `;
 				}
 			}
 		},
@@ -151,7 +161,7 @@ export default {
 			console.log('跳到选人员')
 			// 返回上一页
 			if (path == -1) {
-				uni.navigateBack({ delta: 1 });
+				this.$Router.back();
 			} else {
 				this.$Router.push({
 					path,

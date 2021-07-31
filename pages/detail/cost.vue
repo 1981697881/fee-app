@@ -41,7 +41,7 @@
 			<view class="a-cell-title"><view class="a-cell-title-left ">附件</view></view>
 			<view class="a-cell-bd">
 				<!-- 参考https://ext.dcloud.net.cn/plugin?id=4079 -->
-				<uni-file-picker v-model="imageValue" :readonly="isReview ? true : false" file-mediatype="image" mode="grid" file-extname="png,jpg" />
+				<uni-file-picker v-model="imageValue" :limit="3" :readonly="isReview ? true : false" file-mediatype="image" mode="grid" file-extname="png,jpg" />
 			</view>
 		</view>
 
@@ -49,13 +49,31 @@
 			<button class="u-flex-1" type="default" @tap="jump(-1)">取消</button>
 			<button class="u-flex-1" type="primary" @tap="save">保存</button>
 		</view> -->
-
+		<view class="a-cell-box" v-if="!isReview">
+			<view class="a-cell-title">
+				<view class="a-cell-title-left" :class="{ required: !isReview }">审核人</view>
+				<view class="a-cell-title-right">
+					<ld-select
+						:multiple="true"
+						:list="userList"
+						label-key="fname"
+						value-key="fnumber"
+						placeholder="请选择"
+						clearable
+						v-model="userIndex"
+						@change="selectChange"
+					></ld-select>
+				</view>
+			</view>
+		</view>
 		<template v-if="isReview">
-			<approve ref="approve"></approve>
+			<approve ref="approve" :jdData="jinDuList"></approve>
 		</template>
 		<view class="flex">
 			<button class="u-flex-1" type="default" @tap="jump(-1)">取消</button>
 			<button class="u-flex-1" type="primary" @tap="save">保存</button>
+			<button class="u-flex-1" type="primary" v-if="isReview && this.userInfo.fpay" @tap="pay">付款</button>
+			<button class="u-flex-1" type="primary" v-if="isReview && this.userInfo.fend" @tap="comif">完成</button>
 		</view>
 	</view>
 </template>
@@ -64,26 +82,22 @@
 import mock from '@/common/mock/contact';
 import tools from '@/common/utils/tools';
 import approve from './components/approve';
-
+import ldSelect from '@/components/ld-select/ld-select';
+import { mapMutations, mapActions, mapState } from 'vuex';
 export default {
 	components: {
-		approve
+		approve,ldSelect
 	},
 	data() {
 		const currentDate = this.getDate({
 			format: true
 		});
 		return {
-			// 费用金额
-			money: null,
+			orderType: 0,
+			
 			// 附件，目前只能上传图片，还不知道为什么上传后没file
 			imageValue: [
-				{
-					// 三个属性必填，否则影响组件显示
-					name: 'file.txt',
-					extname: 'txt',
-					url: 'https://img.cdn.aliyun.dcloud.net.cn/guide/uniapp/gh_33446d7f7a26_430.jpg'
-				}
+				
 			],
 			// 金额的中文大写
 			currency: null,
@@ -101,6 +115,12 @@ export default {
 					name: '住宿的费用'
 				}
 			],
+			userIndex: [],
+			userList: [
+				
+			],
+			// 费用金额
+			money: null,
 			// 申请事由
 			reason: '',
 			// 发生日期 - 默认当天
@@ -110,6 +130,9 @@ export default {
 		};
 	},
 	computed: {
+		...mapState({
+			userInfo: state => state.user.userInfo
+		}),
 		startDate() {
 			return this.getDate('start');
 		},
@@ -121,9 +144,30 @@ export default {
 		console.log('显示审批模块')
 		// 拿出路由
 		const { query } = this.$Route;
+		this.params = { ...query };
 		// 判断入口是从 主页的默认入口进入还是 我的待审 - 点击进去详情审批
 		this.isReview = query.isReview;
-		
+		if(this.isReview){
+			this.getJinDu();
+		}
+		if (this.isReview) {
+			this.imageValue = JSON.parse(query.stringMaps)
+			this.imageValue.forEach((item)=>{
+				item.url = decodeURIComponent(item.url)
+			})
+			this.subMatter = query.applySituation;
+			this.happenDate = query.happenDate;
+			this.desc = query.remark;
+			this.typeList.forEach((item,index)=>{
+				if(query.fnumber == item.fnumber){
+					this.typeIndex = index;
+				}
+			})
+			if(query.status == '2'){
+				this.isReview = false
+			}
+		}
+		this.getUserList();
 		uni.$on('handleCheckbox', res => {
 			if(res.type == "approver"){
 				// 处理选择完人员后更新input显示
@@ -140,6 +184,26 @@ export default {
 	},
 	created() {},
 	methods: {
+		selectChange(val) {
+			this.userIndex = val;
+		},
+		getUserList(){
+			this.$api('user.approvalPerson', {
+			}).then(res => {
+				if (res.flag) {
+					this.userList = res.data;
+				}
+			});
+		},
+		getJinDu() {
+			this.$api('approve.jinDu', {
+				parentId: this.params.parentId
+			}).then(res => {
+				if (res.flag) {
+					this.$refs['approve'].stepList = res.data;
+				}
+			});
+		},
 		save() {
 			const duration = 1500,
 				{ jump, success, isReview } = this;
@@ -156,7 +220,7 @@ export default {
 				// 检查必填项
 				// 提交接口，成功.....
 				// 金额0也可以被视为有值
-				if (!this.reason || !this.money > 0) {
+				if (!this.reason || !this.money > 0|| !this.userIndex.length > 0) {
 					uni.showToast({
 						title: '请填写必填项',
 						mask: true,
@@ -164,22 +228,69 @@ export default {
 						duration
 					});
 				} else {
-					this.$api('approve.orderApproval',{
-						applyName: '',
-						status: '',
-					}).then(res => {
-						if (res.flag) {
-							uni.showLoading({
-								title: '提交中'
+					let params = []
+					/* this.imageValue.forEach((item)=>{
+						item.url = encodeURIComponent(item.url)
+					}) */
+					this.userIndex.forEach((item)=>{
+						this.userList.forEach((user)=>{
+							if(user.fnumber == item){
+								let obj = {
+									applySituation: this.reason,
+									cost: this.money,
+									happenDate: this.happenDate,
+									fnumber: this.typeList[this.typeIndex].fnumber,
+									enclosure: '',
+									stringMaps: JSON.stringify(this.imageValue),
+									nextApprovalFnumber: item,
+									nextApprovalFname: user.fname,
+									orderType: this.orderType,
+									applyPersonFnumber: this.userInfo.applyPersonFnumber,
+									applyPersonFname: this.userInfo.applyPersonFname
+								}
+								params.push(obj)
+							}
+						})
+					})
+					if(this.userInfo.freq==1){
+						if(this.params.status == '2'){
+							params.forEach((item)=>{
+								item.id = this.params.id
+							})
+							this.$api('approve.approvalOrderAgain', params).then(res => {
+								if (res.flag) {
+									uni.showToast({
+										title: res.msg || '提交成功',
+										mask: true,
+										duration
+									});
+									setTimeout(() => {
+										jump(-1);
+									}, 1000);
+								}
 							});
-							setTimeout(function() {
-								uni.hideLoading();
-								success({
-									msg: '提交成功'
-								});
-							}, duration);
+						}else{
+							this.$api('approve.applyOrder', params).then(res => {
+								if (res.flag) {
+									uni.showToast({
+										title: res.msg || '提交成功',
+										mask: true,
+										duration
+									});
+									setTimeout(() => {
+										jump(-1);
+									}, 1000);
+								}
+							});
 						}
-					});
+					}else{
+						uni.showToast({
+							title: '无申请权限~',
+							mask: true,
+							duration
+						});
+					}
+					
 				}
 			}
 		},
@@ -187,21 +298,39 @@ export default {
 		success(options) {
 			const duration = 1500,
 				{ jump } = this;
-			this.$api('approve.applyOrder',{
-				applyName: '',
-				status: '',
-			}).then(res => {
-				if (res.flag) {
+				this.params.status=this.$refs['approve'].ideaList[this.$refs['approve'].ideaIndex].value
+				if(this.$refs['approve'].approverNumber!=undefined){
+					this.params.nextYuFnumber=this.$refs['approve'].approverNumber.split(',').filter(function(s) {
+						return s && s.trim();
+					})
+				}
+				if(this.$refs['approve'].approver.length!=undefined){
+					this.params.nextYuFname=this.$refs['approve'].approver.split(',').filter(function(s) {
+						return s && s.trim();
+					})
+				}
+				this.params.copyPeople = this.$refs['approve'].copyer
+				if(this.userInfo.faudit==1){
+					this.$api('approve.orderApproval',this.params).then(res => {
+						if (res.flag) {
+							uni.showToast({
+								title: options.msg || '提交成功',
+								mask: true,
+								duration
+							});
+							setTimeout(() => {
+								jump(-1);
+							}, 2000);
+						}
+					});
+				}else{
 					uni.showToast({
-						title: options.msg || '提交成功',
+						title: '无审核权限~',
 						mask: true,
 						duration
 					});
-					setTimeout(() => {
-						jump(-1);
-					}, 2000);
 				}
-			});
+			
 		},
 		getDate(type) {
 			const date = new Date();
@@ -243,6 +372,9 @@ export default {
 		},
 		handleDate: function(e) {
 			this.happenDate = e.target.value;
+		},
+		handleUserPicker(e) {
+			this.userIndex =  e.detail.value;
 		},
 		handleTypePicker: function(e) {
 			console.log('picker发送选择改变，携带值为：' + e.detail.value);
