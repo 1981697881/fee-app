@@ -47,10 +47,12 @@
 				<uni-file-picker v-model="imageValue" :limit="3" :readonly="isReview ? true : false" file-mediatype="image" mode="grid" file-extname="png,jpg" />
 			</view>
 		</view>
-		<!-- <view class="flex" v-if="!isReview">
-			<button class="u-flex-1" type="default" @tap="jump(-1)">取消</button>
-			<button class="u-flex-1" type="primary" @tap="save">保存</button>
-		</view> -->
+		<view class="a-cell-box" v-if="isReview">
+			<view class="a-cell-title">
+				<view class="a-cell-title-left">抄送人</view>
+				<view class="a-cell-title-right"><input type="text" :disabled="isReview" v-model="makeACopy" /></view>
+			</view>
+		</view>
 		<view class="a-cell-box" v-if="!isReview">
 			<view class="a-cell-title">
 				<view class="a-cell-title-left" :class="{ required: !isReview }">审核人</view>
@@ -65,13 +67,11 @@
 						v-model="userIndex"
 						@change="selectChange"
 					></ld-select>
-				</view>
+				</view>	
 			</view>
 		</view>
-		<template v-if="isReview">
-			<approve ref="approve" :jdData="jinDuList"></approve>
-		</template>
-		<view class="flex">
+		<approve ref="approve" :isReview="isReview" :jdData="jinDuList"></approve>
+		<view class="flex" v-if="isInvisible != 'false'">
 			<button class="u-flex-1" type="default" @tap="jump(-1)">取消</button>
 			<button class="u-flex-1" type="primary" @tap="save">保存</button>
 			<button class="u-flex-1" type="primary" v-if="isReview && this.userInfo.fpay" @tap="pay">付款</button>
@@ -120,8 +120,10 @@ export default {
 			repayAccount: '',
 			// 备注说明
 			reason: '',
+			makeACopy: '',
 			// 判断进来是从填写入口进还是查看详情进来
-			isReview: false
+			isReview: false,
+			isInvisible: true
 		};
 	},
 	computed: {
@@ -136,15 +138,24 @@ export default {
 		// 拿出路由
 		const { query } = this.$Route;
 		// 判断入口是从 主页的默认入口进入还是 我的待审 - 点击进去详情审批
-		
 		this.isReview = query.isReview;
+		this.isInvisible = query.isInvisible;
 		this.params = { ...query };
-		if (this.isReview) {
-			this.getJinDu();
-		}
+		this.getJinDu();
 		this.getUserList();
 		if (this.isReview) {
 			this.imageValue = JSON.parse(query.stringMaps)
+			if(query.applyCcPersonList){
+				let markc = JSON.parse(query.applyCcPersonList)
+				markc.forEach((item,index)=>{
+					if(index == 0){
+						this.makeACopy = item.ccName; 
+					}else{
+						this.makeACopy = this.makeACopy+','+item.ccName; 
+					}
+					
+				})
+			}
 			this.imageValue.forEach((item)=>{
 				item.url = decodeURIComponent(item.url)
 			})
@@ -225,6 +236,26 @@ export default {
 					/* this.imageValue.forEach((item)=>{
 						item.url = encodeURIComponent(item.url)
 					}) */
+					let copyerNumber = []
+					let copyer = []
+					let applyCcPersonList = []
+					if(this.$refs['approve'].copyerNumber.length!=undefined){
+						copyerNumber=this.$refs['approve'].copyerNumber.split(',').filter(function(s) {
+							return s && s.trim();
+						})
+					}
+					if(this.$refs['approve'].copyer.length!=undefined){
+						copyer=this.$refs['approve'].copyer.split(',').filter(function(s) {
+							return s && s.trim();
+						})
+					}
+					copyerNumber.forEach((item,index)=>{
+						let obj = {
+							ccName: copyer[index],
+							ccNumber: item
+						}
+						applyCcPersonList.push(obj)
+					})
 					this.userIndex.forEach(item => {
 						this.userList.forEach(user => {
 							if (user.fnumber == item) {
@@ -240,8 +271,9 @@ export default {
 									nextApprovalFnumber: item,
 									nextApprovalFname: user.fname,
 									orderType: this.orderType,
+									applyCcPersonList: applyCcPersonList,
 									applyPersonFnumber: this.userInfo.applyPersonFnumber,
-									applyPersonFname: this.userInfo.applyPersonFname
+									applyPersonFname: this.userInfo.applyPersonFname,
 								};
 								params.push(obj);
 							}
@@ -345,7 +377,7 @@ export default {
 				status: 3,
 				approvalOpinion: this.$refs['approve'].ideaList[this.$refs['approve'].ideaIndex].name,
 				nextApprovalPeople: this.$refs['approve'].approver,
-				ccPerson: this.$refs['approve'].copyer
+				/* ccPerson: this.$refs['approve'].copyer */
 			}).then(res => {
 				if (res.flag) {
 					uni.showToast({

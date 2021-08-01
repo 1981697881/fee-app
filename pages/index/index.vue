@@ -33,8 +33,36 @@
 						</template>
 					</uni-card>
 				</view>
-				<view v-else>
-					<uni-card v-for="(item, index) in review" @tap="clickCartT({ isReview: true, order: item })" :title="getOrderType(item.orderType)" :extra="item.createDate" :key="index" note="一定要有这个属性才可以用插槽...">
+				<view v-else-if="current == 1">
+					<uni-card
+						v-for="(item, index) in inreview"
+						@tap="clickInv({ isReview: true, isInvisible: false, order: item })"
+						:title="getOrderType(item.orderType)"
+						:extra="item.createDate"
+						:key="index"
+						note="一定要有这个属性才可以用插槽..."
+					>
+						<view class="flex">
+							<view class="u-flex-1 text-cut">审批人: {{ item.nextApprovalFname || '暂无' }}</view>
+							<view class="">滞留: {{ item.currentStopTime || 0 }}/分钟</view>
+						</view>
+						<template v-slot:footer>
+							<view class="flex justify-between">
+								<!-- <view v-if="item.status == '0'" class="primary text-align-right" @tap="handleSave(item)">提交</view> -->
+								<view class="text-cyan text-align-right">{{ getStatus(item.status) }}</view>
+							</view>
+						</template>
+					</uni-card>
+				</view>
+				<view v-else-if="current == 2">
+					<uni-card
+						v-for="(item, index) in review"
+						@tap="clickCartT({ isReview: true, order: item })"
+						:title="getOrderType(item.orderType)"
+						:extra="item.createDate"
+						:key="index"
+						note="一定要有这个属性才可以用插槽..."
+					>
 						<view class="flex">
 							<view class="u-flex-1 text-cut">待审批人: {{ item.nextApprovalFname || '暂无' }}</view>
 							<view class="">滞留: {{ item.currentStopTime || 0 }}/分钟</view>
@@ -44,6 +72,27 @@
 								<!-- <view v-if="item.status == '0'" class="primary text-align-right" @tap="handleSave(item)">提交</view> -->
 								<view class="text-cyan text-align-right">{{ getStatus(item.status) }}</view>
 								<view class="primary text-align-right" @tap="handleUrge">催审</view>
+							</view>
+						</template>
+					</uni-card>
+				</view>
+				<view v-else>
+					<uni-card
+						v-for="(item, index) in csreview"
+						@tap="clickInv({ isReview: true, isInvisible: false, order: item })"
+						:title="getOrderType(item.orderType)"
+						:extra="item.createDate"
+						:key="index"
+						note="一定要有这个属性才可以用插槽..."
+					>
+						<view class="flex">
+							<view class="u-flex-1 text-cut">待审批人: {{ item.nextApprovalFname || '暂无' }}</view>
+							<view class="">滞留: {{ item.currentStopTime || 0 }}/分钟</view>
+						</view>
+						<template v-slot:footer>
+							<view class="flex justify-between">
+								<!-- <view v-if="item.status == '0'" class="primary text-align-right" @tap="handleSave(item)">提交</view> -->
+								<view class="text-cyan text-align-right">{{ getStatus(item.status) }}</view>
 							</view>
 						</template>
 					</uni-card>
@@ -68,14 +117,30 @@ export default {
 			preview: [],
 			// 我的申请列表数据
 			review: [],
+			// 我的已完成列表数据
+			inreview: [],
+			// 我的抄送列表数据
+			csreview: [],
 			tabList: [
 				{
 					name: '我的待审',
-					count: 0
+					count: 0,
+					current: 0
+				},
+				{
+					name: '已完成',
+					count: 0,
+					current: 1
 				},
 				{
 					name: '我的申请',
-					count: 0
+					count: 0,
+					current: 2
+				},
+				{
+					name: '抄送',
+					count: 0,
+					current: 3
 				}
 			],
 			current: 0
@@ -92,12 +157,14 @@ export default {
 	async onShow() {
 		await this.getUserDetails();
 		this.getApproveList();
+		this.getApplyApprovalOrdersList();
+		this.getApplyOrderList();
 		this.getApprovalList();
 	},
 	created() {
-		let that = this
-		this.$api('user.findUserAuthority',{
-			openId: uni.getStorageSync('openid'),
+		let that = this;
+		this.$api('user.findUserAuthority', {
+			openId: uni.getStorageSync('openid')
 		}).then(res => {
 			if (!res.flag) {
 				uni.showToast({
@@ -109,8 +176,7 @@ export default {
 						setTimeout(function() {
 							that.$Router.replace({
 								path: '/pages/index/register',
-								query: {
-								}
+								query: {}
 							});
 						}, 1000);
 					}
@@ -124,98 +190,131 @@ export default {
 	computed: {
 		...mapState({
 			userInfo: state => state.user.userInfo
-		}),
+		})
 	},
 	methods: {
 		...mapActions(['getUserDetails']),
-		getStatus(val){
-			let status = ''
-			switch(val){
-			    case '1':
-					status = "已通过"
-			        break;
-			    case '2':
-					status = "已驳回，需重新申请"
-			        break;
-			    default:
-					status = "已提交"
+		getStatus(val) {
+			let status = '';
+			switch (val) {
+				case '1':
+					status = '已通过';
+					break;
+				case '2':
+					status = '已驳回，需重新申请';
+					break;
+				default:
+					status = '已提交';
 			}
 			return status;
 		},
-		clickCart(value){
-			switch(value.order.orderType){
-			    case '0':
-					this.jump('/pages/detail/cost', value)
-			        break;
-			    case '1':
-					this.jump('/pages/detail/payment', value)
-			        break;
+		clickCart(value) {
+			switch (value.order.orderType) {
+				case '0':
+					this.jump('/pages/detail/cost', value);
+					break;
+				case '1':
+					this.jump('/pages/detail/payment', value);
+					break;
 				case '2':
-					this.jump('/pages/detail/budget', value)
-			        break;
+					this.jump('/pages/detail/budget', value);
+					break;
 				case '3':
-					this.jump('/pages/detail/special', value)
-			        break;
-			    default:
-					this.jump('/pages/detail/transfer', value)
-			}
-			
-		},
-		clickCartT(value){
-			if(value.order.status == '2'){
-				switch(value.order.orderType){
-				    case '0':
-						this.jump('/pages/detail/cost', value)
-				        break;
-				    case '1':
-						this.jump('/pages/detail/payment', value)
-				        break;
-					case '2':
-						this.jump('/pages/detail/budget', value)
-				        break;
-					case '3':
-						this.jump('/pages/detail/special', value)
-				        break;
-				    default:
-						this.jump('/pages/detail/transfer', value)
-				}
+					this.jump('/pages/detail/special', value);
+					break;
+				default:
+					this.jump('/pages/detail/transfer', value);
 			}
 		},
-		getOrderType(val){
-			let orderType = ''
-			switch(val){
-			    case '0':
-					orderType = "费用报销"
-			        break;
-			    case '1':
-					orderType = "付款申请"
-			        break;
+		clickCartT(value) {
+			if (value.order.status == '2') {
+				value.isInvisible = true
+			}else{
+				value.isInvisible = false
+			}
+			switch (value.order.orderType) {
+				case '0':
+					this.jump('/pages/detail/cost', value);
+					break;
+				case '1':
+					this.jump('/pages/detail/payment', value);
+					break;
 				case '2':
-					orderType = "预算外费用申请"
-			        break;
+					this.jump('/pages/detail/budget', value);
+					break;
 				case '3':
-					orderType = "特殊事项申请"
-			        break;
-			    default:
-					orderType = "资金调拨申请"
+					this.jump('/pages/detail/special', value);
+					break;
+				default:
+					this.jump('/pages/detail/transfer', value);
+			}
+		},
+		clickInv(value) {
+			switch (value.order.orderType) {
+				case '0':
+					this.jump('/pages/detail/cost', value);
+					break;
+				case '1':
+					this.jump('/pages/detail/payment', value);
+					break;
+				case '2':
+					this.jump('/pages/detail/budget', value);
+					break;
+				case '3':
+					this.jump('/pages/detail/special', value);
+					break;
+				default:
+					this.jump('/pages/detail/transfer', value);
+			}
+		},
+		getOrderType(val) {
+			let orderType = '';
+			switch (val) {
+				case '0':
+					orderType = '费用报销';
+					break;
+				case '1':
+					orderType = '付款申请';
+					break;
+				case '2':
+					orderType = '预算外费用申请';
+					break;
+				case '3':
+					orderType = '特殊事项申请';
+					break;
+				default:
+					orderType = '资金调拨申请';
 			}
 			return orderType;
 		},
-		getApproveList(){
+		getApproveList() {
 			let that = this;
-			that.$api('approve.applyOrderList',{
+			that.$api('approve.applyOrderList', {
 				applyPersonFnumber: this.userInfo.applyPersonFnumber,
+				status: '0'
 			}).then(res => {
 				if (res.flag) {
 					this.review = res.data;
+					this.tabList[2].count = res.data.length;
+				}
+			});
+		},
+		getApplyApprovalOrdersList() {
+			let that = this;
+			that.$api('approve.applyApprovalOrders', {
+				applyPersonFnumber: this.userInfo.applyPersonFnumber,
+				status: '1'
+			}).then(res => {
+				if (res.flag) {
+					this.inreview = res.data;
 					this.tabList[1].count = res.data.length;
 				}
 			});
 		},
-		getApprovalList(){
+		getApprovalList() {
 			let that = this;
-			that.$api('approve.approvalOrderList',{
-				nextApprovalFnumber: this.userInfo.applyPersonFnumber,
+			that.$api('approve.approvalOrderList', {
+				nextApprovalFnumber: this.userInfo.applyPersonFnumber
 			}).then(res => {
 				if (res.flag) {
 					this.preview = res.data;
@@ -223,16 +322,27 @@ export default {
 				}
 			});
 		},
+		getApplyOrderList() {
+			let that = this;
+			that.$api('approve.applyCcPerson', {
+				ccNumber: this.userInfo.applyPersonFnumber
+			}).then(res => {
+				if (res.flag) {
+					this.csreview = res.data;
+					this.tabList[3].count = res.data.length;
+				}
+			});
+		},
 		// 监听我的申请 - 操作 - 催审
-		handleUrge(){
+		handleUrge() {
 			uni.showToast({
 				title: '催审成功',
 				duration: 2000
 			});
 		},
-		handleSave(item){
-			let params = {...item}
-			this.$api('approve.approvalOrder',{
+		handleSave(item) {
+			let params = { ...item };
+			this.$api('approve.approvalOrder', {
 				aStoryDescribe: params.storyDescribe,
 				aAmount: params.amount,
 				aid: params.id,
@@ -242,7 +352,7 @@ export default {
 				aRemark: params.remark,
 				aPhoto: params.photo,
 				status: params.status,
-				nextApprovalPeople: params.nextApprovalPeople,
+				nextApprovalPeople: params.nextApprovalPeople
 			}).then(res => {
 				if (res.flag) {
 					uni.showToast({
@@ -258,10 +368,14 @@ export default {
 		// 点击tab切换页
 		handleTab(index) {
 			this.current = index;
-			if(this.current == 0){
+			if (this.current == 0) {
 				this.getApprovalList();
-			}else{
+			} else if (this.current == 1) {
+				this.getApplyApprovalOrdersList();
+			} else if (this.current == 2) {
 				this.getApproveList();
+			} else {
+				this.getApplyOrderList();
 			}
 		},
 		// 手动滑动tab页
@@ -271,10 +385,15 @@ export default {
 		// }
 		// 路由跳转
 		jump(path, params) {
-			let obj = {...params};
-			for(let i in obj.order){
-				if(obj.order[i] == null){
-					obj.order[i] = ''
+			let obj = { ...params };
+			if(params){
+				if(params.order.applyCcPersonList){
+					params.order.applyCcPersonList = JSON.stringify(params.order.applyCcPersonList)
+				}
+			}
+			for (let i in obj.order) {
+				if (obj.order[i] == null) {
+					obj.order[i] = '';
 				}
 			}
 			this.$Router.push({
@@ -286,7 +405,7 @@ export default {
 		init() {
 			// 停止当前页面下拉刷新。
 			uni.stopPullDownRefresh();
-		},
+		}
 	}
 };
 </script>

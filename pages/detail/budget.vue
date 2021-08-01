@@ -15,7 +15,7 @@
 			<view class="a-cell-bd"><textarea :disabled="isReview" v-model="subReason" /></view>
 		</view>
 
-		<view class="a-cell-box">
+		<!-- <view class="a-cell-box">
 			<view class="a-cell-title">
 				<view class="a-cell-title-left">报销金额</view>
 				<view class="a-cell-title-right">
@@ -23,7 +23,7 @@
 				</view>
 			</view>
 			<view class="a-cell-bd placeholder">{{ subCurrency || '' }}</view>
-		</view>
+		</view> -->
 
 		<view class="a-cell-box">
 			<view class="a-cell-title">
@@ -79,6 +79,12 @@
 				</view>
 			</view>
 		</view> -->
+		<view class="a-cell-box" v-if="isReview">
+			<view class="a-cell-title">
+				<view class="a-cell-title-left">抄送人</view>
+				<view class="a-cell-title-right"><input type="text" :disabled="isReview" v-model="makeACopy" /></view>
+			</view>
+		</view>
 		<view class="a-cell-box" v-if="!isReview">
 			<view class="a-cell-title">
 				<view class="a-cell-title-left" :class="{ required: !isReview }">审核人</view>
@@ -96,10 +102,10 @@
 				</view>
 			</view>
 		</view>
-		<template v-if="isReview">
-			<approve ref="approve" :jdData="jinDuList"></approve>
+		<template >
+			<approve ref="approve" :isReview="isReview" :jdData="jinDuList"></approve>
 		</template>
-		<view class="flex">
+		<view class="flex" v-if="isInvisible != 'false'">
 			<button class="u-flex-1" type="default" @tap="jump(-1)">取消</button>
 			<button class="u-flex-1" type="primary" @tap="save">保存</button>
 			<button class="u-flex-1" type="primary" v-if="isReview && this.userInfo.fpay" @tap="pay">付款</button>
@@ -148,10 +154,12 @@ export default {
 			reason: '',
 			// 申请事由
 			subReason: '',
+			makeACopy: '',
 			// 发生日期 - 默认当天
 			happenDate: currentDate,
 			// 判断进来是从填写入口进还是查看详情进来
-			isReview: false
+			isReview: false,
+			isInvisible: true
 		};
 	},
 	computed: {
@@ -171,15 +179,24 @@ export default {
 		const { query } = this.$Route;
 		// 判断入口是从 主页的默认入口进入还是 我的待审 - 点击进去详情审批
 		this.isReview = query.isReview;
+		this.isInvisible = query.isInvisible;
 		this.params = { ...query };
 		await this.getSubTypeList();
 		await this.getTypeList();
-		if (this.isReview) {
-			this.getJinDu();
-		}
-		console.log(query)
+		this.getJinDu();
 		if (this.isReview) {
 			this.imageValue = JSON.parse(query.stringMaps)
+			if(query.applyCcPersonList){
+				let markc = JSON.parse(query.applyCcPersonList)
+				markc.forEach((item,index)=>{
+					if(index == 0){
+						this.makeACopy = item.ccName; 
+					}else{
+						this.makeACopy = this.makeACopy+','+item.ccName; 
+					}
+					
+				})
+			}
 			this.imageValue.forEach((item)=>{
 				item.url = decodeURIComponent(item.url)
 			})
@@ -272,6 +289,26 @@ export default {
 					/* this.imageValue.forEach((item)=>{
 						item.url = encodeURIComponent(item.url)
 					}) */
+					let copyerNumber = []
+					let copyer = []
+					let applyCcPersonList = []
+					if(this.$refs['approve'].copyerNumber.length!=undefined){
+						copyerNumber=this.$refs['approve'].copyerNumber.split(',').filter(function(s) {
+							return s && s.trim();
+						})
+					}
+					if(this.$refs['approve'].copyer.length!=undefined){
+						copyer=this.$refs['approve'].copyer.split(',').filter(function(s) {
+							return s && s.trim();
+						})
+					}
+					copyerNumber.forEach((item,index)=>{
+						let obj = {
+							ccName: copyer[index],
+							ccNumber: item
+						}
+						applyCcPersonList.push(obj)
+					})
 					this.userIndex.forEach((item)=>{
 						this.userList.forEach((user)=>{
 							if(user.fnumber == item){
@@ -286,6 +323,7 @@ export default {
 									fnumber: this.typeList[this.typeIndex].fnumber,
 									reimbursementId: this.subTypeList[this.subTypeIndex].fnumber,
 									nextApprovalFnumber: item,
+									applyCcPersonList: applyCcPersonList,
 									nextApprovalFname: user.fname,
 									orderType: this.orderType,
 									applyPersonFnumber: this.userInfo.applyPersonFnumber,
