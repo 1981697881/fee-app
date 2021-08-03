@@ -84,14 +84,14 @@ export default {
 					name: '不同意终止',
 					value: 3
 				},
-				{
-					name: '同意并终止',
-					value: 4
-				},
-				{
-					name: '支付完成',
-					value: 5
-				}
+				// {
+				// 	name: '同意并终止',
+				// 	value: 4
+				// },
+				// {
+				// 	name: '支付完成',
+				// 	value: 5
+				// }
 			],
 			// 人员列表名单数据
 			contactList: [],
