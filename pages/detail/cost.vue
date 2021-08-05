@@ -8,6 +8,14 @@
 				</view>
 			</view>
 		</view>
+		<view class="a-cell-box" v-if="isReview">
+			<view class="a-cell-title">
+				<view class="a-cell-title-left" :class="{ required: !isReview }">待审核人</view>
+				<view class="a-cell-title-right">
+					<text>{{ nextApprovalFname }}</text>
+				</view>
+			</view>
+		</view>
 		<view class="a-cell-box">
 			<view class="a-cell-title">
 				<view class="a-cell-title-left" :class="{ required: !isReview }">费用类型</view>
@@ -21,7 +29,7 @@
 
 		<view class="a-cell-box">
 			<view class="a-cell-title"><view class="a-cell-title-left" :class="{ required: !isReview }">申请事由</view></view>
-			<view class="a-cell-bd"><textarea :disabled="isReview" v-model="reason" /></view>
+			<view class="a-cell-bd"><textarea :disabled="isReview" v-model.trim="reason" /></view>
 		</view>
 
 		<view class="a-cell-box">
@@ -54,7 +62,7 @@
 		</view>
 		<view class="a-cell-box">
 			<view class="a-cell-title"><view class="a-cell-title-left">备注说明</view></view>
-			<view class="a-cell-bd"><textarea :disabled="isReview" v-model="remark" /></view>
+			<view class="a-cell-bd"><textarea :disabled="isReview" v-model.trim="remark" /></view>
 		</view>
 		<!-- <view class="flex" v-if="!isReview">
 			<button class="u-flex-1" type="default" @tap="jump(-1)">取消</button>
@@ -84,7 +92,7 @@
 			</view>
 		</view>
 		<template>
-			<approve ref="approve" :isReview="isReview" :jdData="jinDuList"></approve>
+			<approve :isShne="isShne" :isReview="isReview" :jdData="jinDuList"></approve>
 		</template>
 		<view class="flex" v-if="isInvisible != 'false'">
 			<button class="u-flex-1" type="default" @tap="jump(-1)">取消</button>
@@ -141,10 +149,12 @@ export default {
 			makeACopy: '',
 			remark: '',
 			applyPersonFname: '',
+			nextApprovalFname: '',
 			// 发生日期 - 默认当天
 			happenDate: currentDate,
 			// 判断进来是从填写入口进还是查看详情进来
 			isReview: false,
+			isShne: false,
 			isClick: false,
 			isInvisible: true
 		};
@@ -168,9 +178,10 @@ export default {
 		console.log(query);
 		// 判断入口是从 主页的默认入口进入还是 我的待审 - 点击进去详情审批
 		this.isReview = query.isReview;
+		this.isShne = query.isShne;
 		this.isInvisible = query.isInvisible;
-		this.getJinDu();
 		if (this.isReview) {
+			this.getJinDu();
 			this.imageValue = JSON.parse(query.stringMaps);
 			if (query.applyCcPersonList) {
 				let markc = JSON.parse(query.applyCcPersonList);
@@ -186,8 +197,11 @@ export default {
 			this.imageValue.forEach(item => {
 				item.url = decodeURIComponent(item.url);
 			});
+			this.currency = tools.convertCurrency(query.cost);
 			this.reason = query.applySituation;
+			this.$refs['approve'].revirwReason = query.approvalComments;
 			this.applyPersonFname = query.applyPersonFname;
+			this.nextApprovalFname = query.nextApprovalFname;
 			this.money = query.cost;
 			this.happenDate = query.happenDate;
 			this.remark = query.remark;
@@ -357,7 +371,7 @@ export default {
 					return s && s.trim();
 				});
 			}
-			this.params.copyPeople = this.$refs['approve'].copyer;
+			this.params.approvalComments=this.$refs['approve'].revirwReason;
 			if (this.userInfo.faudit == 1) {
 				this.$api('approve.orderApproval', this.params).then(res => {
 					if (res.flag) {
@@ -425,6 +439,7 @@ export default {
 					return s && s.trim();
 				});
 			}
+			this.params.approvalComments=this.$refs['approve'].revirwReason;
 			if(this.params.status == 1){
 				this.params.status = 3
 				this.$api('approve.orderApproval', this.params).then(res => {

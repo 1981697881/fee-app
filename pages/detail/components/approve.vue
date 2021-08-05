@@ -3,16 +3,16 @@
 		<view class="a-cell-box" v-if="isReview">
 			<view class="a-cell-title"><view class="a-cell-title-left text-bold ">当前待审批</view></view>
 		</view>
-		<view class="a-cell-box" v-if="isReview">
+		<view class="a-cell-box" v-if="isShne == 'true'">
 			<view class="a-cell-title">
 				<view class="a-cell-title-left">审批意见</view>
-				<view class="a-cell-title-right to-right">
+				<view class="a-cell-title-right to-right" v-if="isShne != 'true'">
 					<picker @change="handleIdeaPicker" :value="ideaIndex" :range="ideaList" range-key="name">
 						<view class="uni-input">{{ ideaList[ideaIndex].name }}</view>
 					</picker>
 				</view>
 			</view>
-			<view class="a-cell-bd"><textarea :value="revirwReason" placeholder="选择性填写意见" /></view>
+			<view class="a-cell-bd"><textarea  :disabled="isShne == 'true'" v-model="revirwReason" placeholder="选择性填写意见" /></view>
 		</view>
 
 		<!-- 跳转新页面选择人员信息回调选中，多选 -->
@@ -55,6 +55,9 @@ export default {
 		isReview: {
 			type: Boolean,
 			default: false
+		},isShne: {
+			type: String,
+			default: "false"
 		}
 	},
 	data() {
@@ -77,7 +80,7 @@ export default {
 					value: 1,
 				},
 				{
-					name: '不同意打回',
+					name: '不同意驳回',
 					value: 2
 				},
 				{

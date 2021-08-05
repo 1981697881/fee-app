@@ -201,7 +201,7 @@ export default {
 					status = '已通过';
 					break;
 				case '2':
-					status = '已驳回，需重新申请';
+					status = '已驳回';
 					break;
 				default:
 					status = '已提交';
@@ -227,10 +227,9 @@ export default {
 			}
 		},
 		clickCartT(value) {
+			value.isInvisible = false
 			if (value.order.status == '2') {
-				value.isInvisible = true
-			}else{
-				value.isInvisible = false
+				value.isShne = true
 			}
 			switch (value.order.orderType) {
 				case '0':
