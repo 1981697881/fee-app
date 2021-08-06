@@ -17,18 +17,18 @@
 
 		<!-- 跳转新页面选择人员信息回调选中，多选 -->
 		<!-- 跳转给个新页面，类似选择联系人，多选后确认回调回来，展示头像出来（具体参考企业微信的审批流程） -->
-		<view class="a-cell-box" v-if="isReview">
+		<view class="a-cell-box" v-if="isShne != 'true'">
 			<view class="a-cell-title">
 				<view class="a-cell-title-left ">下一级审批人</view>
 				<view class="a-cell-title-right to-right" @tap="jump('/pages/contact/index', {list:contactList,type:'approver'})">{{ approver || '点击选择' }}</view>
 			</view>
 		</view>
-		<view class="a-cell-box" v-if="!isReview">
+		<!-- <view class="a-cell-box" v-if="!isReview">
 			<view class="a-cell-title">
 				<view class="a-cell-title-left ">抄送人</view>
 				<view class="a-cell-title-right to-right" @tap="jump('/pages/contact/index', {list:conperList,type:'copyer'})">{{ copyer || '点击选择' }}</view>
 			</view>
-		</view>
+		</view> -->
 		<!-- 采用流式布局展示，从上往下的流 -->
 		<!-- <text>审批流程：1-发起申请\n2-张三同意\n3李四同意</text> -->
 		<view class="a-cell-box" >

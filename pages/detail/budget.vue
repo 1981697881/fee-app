@@ -76,7 +76,6 @@
 			</view>
 			<view class="a-cell-bd placeholder">{{ currency || '' }}</view>
 		</view>
-
 		<view class="a-cell-box">
 			<view class="a-cell-title"><view class="a-cell-title-left ">附件</view></view>
 			<view class="a-cell-bd">
@@ -84,28 +83,17 @@
 				<uni-file-picker v-model="imageValue" :limit="3" :readonly="isReview ? true : false" file-mediatype="image" mode="grid" file-extname="png,jpg" />
 			</view>
 		</view>
-		<!-- <view class="a-cell-box" v-if="!isReview">
-			<view class="a-cell-title">
-				<view class="a-cell-title-left" :class="{ required: !isReview }">审核人</view>
-				<view class="a-cell-title-right">
-					<picker :disabled="isReview" @change="handleUserPicker" :value="userIndex" :range="userList" range-key="fname">
-						<view class="uni-input">{{ userList[userIndex].fname }}</view>
-					</picker>
-				</view>
-			</view>
-		</view> -->
-		<view class="a-cell-box" v-if="isReview">
+		<!-- <view class="a-cell-box" v-if="isReview">
 			<view class="a-cell-title">
 				<view class="a-cell-title-left">抄送人</view>
 				<view class="a-cell-title-right"><input type="text" :disabled="isReview" v-model="makeACopy" /></view>
 			</view>
-		</view>
-		<view class="a-cell-box" v-if="!isReview">
+		</view> -->
+		<view class="a-cell-box">
 			<view class="a-cell-title">
-				<view class="a-cell-title-left" :class="{ required: !isReview }">审核人</view>
-				<view class="a-cell-title-right">
+				<view class="a-cell-title-left" :class="{ required: !isReview }">抄送人</view>
+				<!-- <view class="a-cell-title-right">
 					<ld-select
-						:multiple="true"
 						:list="userList"
 						label-key="fname"
 						value-key="fnumber"
@@ -114,6 +102,11 @@
 						v-model="userIndex"
 						@change="selectChange"
 					></ld-select>
+				</view> -->
+				<view class="a-cell-title-right">
+					<picker :disabled="isReview" @change="selectChange" :value="userIndex" :range="userList" range-key="fname">
+						<view class="uni-input">{{ userList[userIndex].fname }}</view>
+					</picker>
 				</view>
 			</view>
 		</view>
@@ -157,7 +150,7 @@ export default {
 			typeIndex: 0,
 			// 费用类型数据
 			typeList: [],
-			userIndex: [],
+			userIndex: 0,
 			userList: [],
 			// 报销类型
 			subTypeIndex: 0,
@@ -208,13 +201,13 @@ export default {
 			if (query.applyCcPersonList) {
 				let markc = JSON.parse(query.applyCcPersonList);
 				this.params.applyCcPersonList = markc;
-				markc.forEach((item, index) => {
+				/* markc.forEach((item, index) => {
 					if (index == 0) {
 						this.makeACopy = item.ccName;
 					} else {
 						this.makeACopy = this.makeACopy + ',' + item.ccName;
 					}
-				});
+				}); */
 			}
 			this.imageValue.forEach(item => {
 				item.url = decodeURIComponent(item.url);
@@ -233,14 +226,19 @@ export default {
 					this.typeIndex = index;
 				}
 			});
+			this.userList.forEach((item, index) => {
+				if (markc[0].ccNumber == item.fnumber) {
+					this.userIndex = index;
+				}
+			});
 			this.subTypeList.forEach((item, index) => {
 				if (query.reimbursementId == item.fnumber) {
 					this.typeIndexsub = index;
 				}
 			});
-			if (query.status == '2') {
+			/* if (query.status == '2') {
 				this.isReview = false;
-			}
+			} */
 		}
 		this.getUserList();
 		uni.$on('handleCheckbox', res => {
@@ -255,12 +253,14 @@ export default {
 				this.$refs['approve'].$set(this.$refs['approve'], 'conperList', res.item);
 				this.$refs['approve'].getCopyer();
 			}
+			uni.$off('handleCheckbox')
 		});
+		
 	},
 	created() {},
 	methods: {
 		selectChange(val) {
-			this.userIndex = val;
+			this.userIndex = val.detail.value;
 		},
 		getUserList() {
 			this.$api('user.approvalPerson', {}).then(res => {
@@ -297,7 +297,7 @@ export default {
 				{ jump, success, isReview } = this;
 			// 先判断是填写审批单/审批单据
 
-			if (!this.reason || !this.money > 0 || !this.userIndex.length > 0) {
+			if (!this.reason || !this.money > 0 ) {
 				uni.showToast({
 					title: '请填写必填项',
 					mask: true,
@@ -306,52 +306,55 @@ export default {
 				});
 			} else {
 				let params = [];
-				/* this.imageValue.forEach((item)=>{
-						item.url = encodeURIComponent(item.url)
-					}) */
-				let copyerNumber = [];
-				let copyer = [];
+				let approverNumber = [];
+				let approver = [];
 				let applyCcPersonList = [];
-				if (this.$refs['approve'].copyerNumber.length != undefined) {
-					copyerNumber = this.$refs['approve'].copyerNumber.split(',').filter(function(s) {
+				let obj = {
+					ccName: this.userList[this.userIndex].fname,
+					ccNumber: this.userList[this.userIndex].fnumber
+				};
+				applyCcPersonList.push(obj);
+				if (this.$refs['approve'].approverNumber.length != undefined) {
+					approverNumber = this.$refs['approve'].approverNumber.split(',').filter(function(s) {
 						return s && s.trim();
 					});
 				}
-				if (this.$refs['approve'].copyer.length != undefined) {
-					copyer = this.$refs['approve'].copyer.split(',').filter(function(s) {
+				if (this.$refs['approve'].approver.length != undefined) {
+					approver = this.$refs['approve'].approver.split(',').filter(function(s) {
 						return s && s.trim();
 					});
 				}
+				/*
 				copyerNumber.forEach((item, index) => {
 					let obj = {
 						ccName: copyer[index],
 						ccNumber: item
 					};
 					applyCcPersonList.push(obj);
-				});
-				this.userIndex.forEach(item => {
-					this.userList.forEach(user => {
-						if (user.fnumber == item) {
-							let obj = {
-								applySituation: this.subReason,
-								cost: this.money,
-								reimbursementCost: this.subMoney,
-								happenDate: this.happenDate,
-								remark: this.reason,
-								stringMaps: JSON.stringify(this.imageValue),
-								enclosure: '',
-								fnumber: this.typeList[this.typeIndex].fnumber,
-								reimbursementId: this.subTypeList[this.subTypeIndex].fnumber,
-								nextApprovalFnumber: item,
-								applyCcPersonList: applyCcPersonList,
-								nextApprovalFname: user.fname,
-								orderType: this.orderType,
-								applyPersonFnumber: this.userInfo.applyPersonFnumber,
-								applyPersonFname: this.userInfo.applyPersonFname
-							};
-							params.push(obj);
-						}
-					});
+				}); */
+				approverNumber.forEach((item, index) => {
+					/* this.userList.forEach(user => {
+						if (user.fnumber == item) { */
+					let obj = {
+						applySituation: this.subReason,
+						cost: this.money,
+						reimbursementCost: this.subMoney,
+						happenDate: this.happenDate,
+						remark: this.reason,
+						stringMaps: JSON.stringify(this.imageValue),
+						enclosure: '',
+						fnumber: this.typeList[this.typeIndex].fnumber,
+						reimbursementId: this.subTypeList[this.subTypeIndex].fnumber,
+						applyCcPersonList: applyCcPersonList,
+						nextApprovalFnumber: item,
+						nextApprovalFname: approver[index],
+						orderType: this.orderType,
+						applyPersonFnumber: this.userInfo.applyPersonFnumber,
+						applyPersonFname: this.userInfo.applyPersonFname
+					};
+					params.push(obj);
+					/* }
+					}); */
 				});
 				if (this.userInfo.freq == 1) {
 					if (this.params.status == '2') {
@@ -409,7 +412,7 @@ export default {
 					return s && s.trim();
 				});
 			}
-			this.params.approvalComments=this.$refs['approve'].revirwReason;
+			this.params.approvalComments = this.$refs['approve'].revirwReason;
 			/* this.params.copyPeople = this.$refs['approve'].copyer; */
 			if (this.userInfo.faudit == 1) {
 				this.$api('approve.orderApproval', this.params).then(res => {
@@ -447,9 +450,9 @@ export default {
 					return s && s.trim();
 				});
 			}
-			this.params.approvalComments=this.$refs['approve'].revirwReason;
-			if(this.params.status == 1){
-				this.params.status = 3
+			this.params.approvalComments = this.$refs['approve'].revirwReason;
+			if (this.params.status == 1) {
+				this.params.status = 3;
 				this.$api('approve.orderApproval', this.params).then(res => {
 					if (res.flag) {
 						this.isClick = true;

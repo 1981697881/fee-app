@@ -68,31 +68,26 @@
 			<button class="u-flex-1" type="default" @tap="jump(-1)">取消</button>
 			<button class="u-flex-1" type="primary" @tap="save">保存</button>
 		</view> -->
-		<view class="a-cell-box" v-if="!isReview">
+		<view class="a-cell-box">
 			<view class="a-cell-title">
-				<view class="a-cell-title-left" :class="{ required: !isReview }">审核人</view>
+				<view class="a-cell-title-left" :class="{ required: !isReview }">抄送人</view>
 				<view class="a-cell-title-right">
-					<ld-select
-						:multiple="true"
-						:list="userList"
-						label-key="fname"
-						value-key="fnumber"
-						placeholder="请选择"
-						clearable
-						v-model="userIndex"
-						@change="selectChange"
-					></ld-select>
+					<view class="a-cell-title-right">
+						<picker :disabled="isReview" @change="selectChange" :value="userIndex" :range="userList" range-key="fname">
+							<view class="uni-input">{{ userList[userIndex].fname }}</view>
+						</picker>
+					</view>
 				</view>
 			</view>
 		</view>
-		<view class="a-cell-box" v-if="isReview">
+		<!-- <view class="a-cell-box" v-if="isReview">
 			<view class="a-cell-title">
 				<view class="a-cell-title-left">抄送人</view>
 				<view class="a-cell-title-right"><input type="text" :disabled="isReview" v-model="makeACopy" /></view>
 			</view>
-		</view>
+		</view> -->
 		<template>
-			<approve :isShne="isShne" :isReview="isReview" :jdData="jinDuList"></approve>
+			<approve  ref="approve" :isShne="isShne" :isReview="isReview" :jdData="jinDuList"></approve>
 		</template>
 		<view class="flex" v-if="isInvisible != 'false'">
 			<button class="u-flex-1" type="default" @tap="jump(-1)">取消</button>
@@ -140,7 +135,7 @@ export default {
 					name: '住宿的费用'
 				}
 			],
-			userIndex: [],
+			userIndex: 0,
 			userList: [],
 			// 费用金额
 			money: null,
@@ -186,13 +181,13 @@ export default {
 			if (query.applyCcPersonList) {
 				let markc = JSON.parse(query.applyCcPersonList);
 				this.params.applyCcPersonList = markc;
-				markc.forEach((item, index) => {
+				/* markc.forEach((item, index) => {
 					if (index == 0) {
 						this.makeACopy = item.ccName;
 					} else {
 						this.makeACopy = this.makeACopy + ',' + item.ccName;
 					}
-				});
+				}); */
 			}
 			this.imageValue.forEach(item => {
 				item.url = decodeURIComponent(item.url);
@@ -210,9 +205,14 @@ export default {
 					this.typeIndex = index;
 				}
 			});
-			if (query.status == '2') {
+			this.userList.forEach((item, index) => {
+				if (markc[0].ccNumber == item.fnumber) {
+					this.userIndex = index;
+				}
+			});
+			/* if (query.status == '2') {
 				this.isReview = false;
-			}
+			} */
 		}
 		this.getUserList();
 		uni.$on('handleCheckbox', res => {
@@ -227,12 +227,13 @@ export default {
 				this.$refs['approve'].$set(this.$refs['approve'], 'conperList', res.item);
 				this.$refs['approve'].getCopyer();
 			}
+			uni.$off('handleCheckbox')
 		});
 	},
 	created() {},
 	methods: {
 		selectChange(val) {
-			this.userIndex = val;
+			this.userIndex = val.detail.value;
 		},
 		getUserList() {
 			this.$api('user.approvalPerson', {}).then(res => {
@@ -261,7 +262,7 @@ export default {
 			// 检查必填项
 			// 提交接口，成功.....
 			// 金额0也可以被视为有值
-			if (!this.reason || !this.money > 0 || !this.userIndex.length > 0) {
+			if (!this.reason || !this.money > 0 ) {
 				uni.showToast({
 					title: '请填写必填项',
 					mask: true,
@@ -270,50 +271,48 @@ export default {
 				});
 			} else {
 				let params = [];
-				/* this.imageValue.forEach((item)=>{
-						item.url = encodeURIComponent(item.url)
-					}) */
-				let copyerNumber = [];
-				let copyer = [];
+				let approverNumber = [];
+				let approver = [];
 				let applyCcPersonList = [];
-				if (this.$refs['approve'].copyerNumber.length != undefined) {
-					copyerNumber = this.$refs['approve'].copyerNumber.split(',').filter(function(s) {
+				let obj = {
+					ccName: this.userList[this.userIndex].fname,
+					ccNumber: this.userList[this.userIndex].fnumber
+				};
+				applyCcPersonList.push(obj);
+				if (this.$refs['approve'].approverNumber.length != undefined) {
+					approverNumber = this.$refs['approve'].approverNumber.split(',').filter(function(s) {
 						return s && s.trim();
 					});
 				}
-				if (this.$refs['approve'].copyer.length != undefined) {
-					copyer = this.$refs['approve'].copyer.split(',').filter(function(s) {
+				if (this.$refs['approve'].approver.length != undefined) {
+					approver = this.$refs['approve'].approver.split(',').filter(function(s) {
 						return s && s.trim();
 					});
 				}
-				copyerNumber.forEach((item, index) => {
+				/* copyerNumber.forEach((item, index) => {
 					let obj = {
 						ccName: copyer[index],
 						ccNumber: item
 					};
 					applyCcPersonList.push(obj);
-				});
-				this.userIndex.forEach(item => {
-					this.userList.forEach(user => {
-						if (user.fnumber == item) {
-							let obj = {
-								applySituation: this.reason,
-								cost: this.money,
-								remark: this.remark,
-								happenDate: this.happenDate,
-								fnumber: this.typeList[this.typeIndex].fnumber,
-								enclosure: '',
-								stringMaps: JSON.stringify(this.imageValue),
-								nextApprovalFnumber: item,
-								applyCcPersonList: applyCcPersonList,
-								nextApprovalFname: user.fname,
-								orderType: this.orderType,
-								applyPersonFnumber: this.userInfo.applyPersonFnumber,
-								applyPersonFname: this.userInfo.applyPersonFname
-							};
-							params.push(obj);
-						}
-					});
+				}); */
+				approverNumber.forEach((item, index) => {
+					let obj = {
+						applySituation: this.reason,
+						cost: this.money,
+						remark: this.remark,
+						happenDate: this.happenDate,
+						fnumber: this.typeList[this.typeIndex].fnumber,
+						enclosure: '',
+						stringMaps: JSON.stringify(this.imageValue),
+						applyCcPersonList: applyCcPersonList,
+						nextApprovalFnumber: item,
+						nextApprovalFname: approver[index],
+						orderType: this.orderType,
+						applyPersonFnumber: this.userInfo.applyPersonFnumber,
+						applyPersonFname: this.userInfo.applyPersonFname
+					};
+					params.push(obj);
 				});
 				if (this.userInfo.freq == 1) {
 					if (this.params.status == '2') {
@@ -371,7 +370,7 @@ export default {
 					return s && s.trim();
 				});
 			}
-			this.params.approvalComments=this.$refs['approve'].revirwReason;
+			this.params.approvalComments = this.$refs['approve'].revirwReason;
 			if (this.userInfo.faudit == 1) {
 				this.$api('approve.orderApproval', this.params).then(res => {
 					if (res.flag) {
@@ -439,9 +438,9 @@ export default {
 					return s && s.trim();
 				});
 			}
-			this.params.approvalComments=this.$refs['approve'].revirwReason;
-			if(this.params.status == 1){
-				this.params.status = 3
+			this.params.approvalComments = this.$refs['approve'].revirwReason;
+			if (this.params.status == 1) {
+				this.params.status = 3;
 				this.$api('approve.orderApproval', this.params).then(res => {
 					if (res.flag) {
 						this.isClick = true;

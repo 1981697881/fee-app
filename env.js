@@ -3,8 +3,8 @@
  *  @version 1.2.0
  */
 const ENV_BASE_URL = {
-	development: 'http://test.gzfzdev.com:8989', //开发环境
-	production: 'http://test.gzfzdev.com:8989', //生产环境
+	development: 'https://zhongyao.gzfzdev.com', //开发环境
+	production: 'https://zhongyao.gzfzdev.com', //生产环境
 }
 const ENV_API_URL = {
 	development: `${ENV_BASE_URL.development}/`, //开发环境
