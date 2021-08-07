@@ -153,7 +153,9 @@ export default {
 		const { query } = this.$Route;
 		// 判断入口是从 主页的默认入口进入还是 我的待审 - 点击进去详情审批
 		this.isReview = query.isReview;
-		this.isShne = query.isShne;
+		if(query.isShne == 'true'){
+			this.isShne = true;
+		}
 		this.isInvisible = query.isInvisible;
 		this.params = { ...query };
 		this.getUserList();

@@ -3,18 +3,17 @@
 		<view class="a-cell-box" v-if="isReview">
 			<view class="a-cell-title"><view class="a-cell-title-left text-bold ">当前待审批</view></view>
 		</view>
-		<view class="a-cell-box" v-if="isShne == 'true'">
+		<view class="a-cell-box" v-if="isReview">
 			<view class="a-cell-title">
 				<view class="a-cell-title-left">审批意见</view>
-				<view class="a-cell-title-right to-right" v-if="isShne != 'true'">
+				<view class="a-cell-title-right to-right" v-if="!isShne">
 					<picker @change="handleIdeaPicker" :value="ideaIndex" :range="ideaList" range-key="name">
 						<view class="uni-input">{{ ideaList[ideaIndex].name }}</view>
 					</picker>
 				</view>
 			</view>
-			<view class="a-cell-bd"><textarea  :disabled="isShne == 'true'" v-model="revirwReason" placeholder="选择性填写意见" /></view>
+			<view class="a-cell-bd"><textarea :disabled="isShne" v-model="revirwReason" placeholder="选择性填写意见" /></view>
 		</view>
-
 		<!-- 跳转新页面选择人员信息回调选中，多选 -->
 		<!-- 跳转给个新页面，类似选择联系人，多选后确认回调回来，展示头像出来（具体参考企业微信的审批流程） -->
 		<view class="a-cell-box" v-if="isShne != 'true'">
@@ -56,8 +55,8 @@ export default {
 			type: Boolean,
 			default: false
 		},isShne: {
-			type: String,
-			default: "false"
+			type: Boolean,
+			default: false
 		}
 	},
 	data() {
@@ -108,7 +107,7 @@ export default {
 		const { contactList, steps } = mock;
 		this.getUserList();
 		this.stepList = this.jdData;
-		console.log(this.ideaIndex)
+		console.log(this.isShne)
 		// 根据选中人员数据去拼接人名
 		// this.getApprover();
 	},
