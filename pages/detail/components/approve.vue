@@ -84,7 +84,7 @@ export default {
 				},
 				{
 					name: '不同意终止',
-					value: 3
+					value: 4
 				},
 				// {
 				// 	name: '同意并终止',

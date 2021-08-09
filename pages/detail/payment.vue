@@ -277,6 +277,7 @@ export default {
 						nextApprovalFnumber: item,
 						nextApprovalFname: approver[index],
 						orderType: this.orderType,
+						openId: this.userInfo.openId,
 						applyPersonFnumber: this.userInfo.applyPersonFnumber,
 						applyPersonFname: this.userInfo.applyPersonFname
 					};

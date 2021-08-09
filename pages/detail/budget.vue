@@ -242,6 +242,11 @@ export default {
 			/* if (query.status == '2') {
 				this.isReview = false;
 			} */
+		}else{
+			if(this.userInfo.approvalHistory){
+			console.log(this.userInfo.approvalHistory.split(','))
+			this.$refs['approve'].$set(this.$refs['approve'], 'contactList', this.userInfo.approvalHistory);
+			}
 		}
 		this.getUserList();
 		uni.$on('handleCheckbox', res => {
@@ -352,6 +357,7 @@ export default {
 						nextApprovalFnumber: item,
 						nextApprovalFname: approver[index],
 						orderType: this.orderType,
+						openId: this.userInfo.openId,
 						applyPersonFnumber: this.userInfo.applyPersonFnumber,
 						applyPersonFname: this.userInfo.applyPersonFname
 					};
