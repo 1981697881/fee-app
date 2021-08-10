@@ -43,6 +43,10 @@
 				"path":"index",
 				"style": {
 					"navigationBarTitleText": "人员名单"
+				},
+				"meta": {
+				"auth": true, //需要登录
+				"async": true //是否同步
 				}
 			}
 		]
@@ -53,30 +57,50 @@
 				"path": "budget",
 				"style": {
 					"navigationBarTitleText": "预算外费用申请"
+				},
+				"meta": {
+				"auth": true, //需要登录
+				"async": true //是否同步
 				}
 			},
 			{
 				"path": "cost",
 				"style": {
 					"navigationBarTitleText": "费用报销"
+				},
+				"meta": {
+				"auth": true, //需要登录
+				"async": true //是否同步
 				}
 			},
 			{
 				"path": "payment",
 				"style": {
 					"navigationBarTitleText": "付款申请"
+				},
+				"meta": {
+				"auth": true, //需要登录
+				"async": true //是否同步
 				}
 			},
 			{
 				"path": "transfer",
 				"style": {
 					"navigationBarTitleText": "资金调拨单"
+				},
+				"meta": {
+				"auth": true, //需要登录
+				"async": true //是否同步
 				}
 			},
 			{
 				"path": "special",
 				"style": {
 					"navigationBarTitleText": "特殊事项申请"
+				},
+				"meta": {
+				"auth": true, //需要登录
+				"async": true //是否同步
 				}
 			}
 		]

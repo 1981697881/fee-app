@@ -238,9 +238,34 @@ export default {
 			this.userIndex = val.detail.value;
 		},
 		getUserList() {
+			let that = this
 			this.$api('user.approvalPerson', {}).then(res => {
 				if (res.flag) {
 					this.userList = res.data;
+					if(!that.isReview){
+						if(that.userInfo.approvalHistory){
+							let userList = [...res.data]
+							let approvalHistory = that.userInfo.approvalHistory.split(',')
+							let approver = '';
+							let approverNumber = '';
+							userList.forEach((item)=>{
+								if(approvalHistory.indexOf(item.fnumber) !=-1){
+									item.checked = true
+									approver += `${item.fname}, `;
+									approverNumber += `${item.fnumber}, `;
+								}
+							})
+						that.$refs['approve'].$set(that.$refs['approve'], 'contactList', userList);
+						this.$refs['approve'].approver = approver
+						this.$refs['approve'].approverNumber = approverNumber
+						}
+					}else{
+					this.userList.forEach((item,index)=>{
+						if (JSON.parse(that.$Route.query.applyCcPersonList)[0].ccNumber == item.fnumber) {
+							that.userIndex = index;
+						}
+					})
+					}
 				}
 			});
 		},

@@ -198,6 +198,7 @@ export default {
 		this.params = { ...query };
 		await this.getSubTypeList();
 		await this.getTypeList();
+		await this.getUserList();
 		if (this.isReview) {
 			this.getJinDu();
 			this.imageValue = JSON.parse(query.stringMaps);
@@ -211,6 +212,7 @@ export default {
 						this.makeACopy = this.makeACopy + ',' + item.ccName;
 					}
 				}); */
+				
 			}
 			this.imageValue.forEach(item => {
 				item.url = decodeURIComponent(item.url);
@@ -242,13 +244,7 @@ export default {
 			/* if (query.status == '2') {
 				this.isReview = false;
 			} */
-		}else{
-			if(this.userInfo.approvalHistory){
-			console.log(this.userInfo.approvalHistory.split(','))
-			this.$refs['approve'].$set(this.$refs['approve'], 'contactList', this.userInfo.approvalHistory);
-			}
 		}
-		this.getUserList();
 		uni.$on('handleCheckbox', res => {
 			if (res.type == 'approver') {
 				// 处理选择完人员后更新input显示
@@ -271,9 +267,41 @@ export default {
 			this.userIndex = val.detail.value;
 		},
 		getUserList() {
-			this.$api('user.approvalPerson', {}).then(res => {
+			let that = this
+			that.$api('user.approvalPerson', {}).then(res => {
 				if (res.flag) {
-					this.userList = res.data;
+					that.userList = res.data;
+					if(!that.isReview){
+						if(that.userInfo.approvalHistory){
+							let userList = [...res.data]
+							let approvalHistory = that.userInfo.approvalHistory.split(',')
+							let approver = '';
+							let approverNumber = '';
+							userList.forEach((item)=>{
+								if(approvalHistory.indexOf(item.fnumber) !=-1){
+									item.checked = true
+									approver += `${item.fname}, `;
+									approverNumber += `${item.fnumber}, `;
+								}
+								console.log(JSON.parse(that.$Route.query.applyCcPersonList)[0].ccNumber == item.fnumber)
+								console.log(JSON.parse(that.$Route.query.applyCcPersonList)[0].ccNumber)
+								console.log(item.fnumber)
+								if (JSON.parse(that.$Route.query.applyCcPersonList)[0].ccNumber == item.fnumber) {
+									that.userIndex = index;
+								}
+							})
+						that.$refs['approve'].$set(that.$refs['approve'], 'contactList', userList);
+						this.$refs['approve'].approver = approver
+						this.$refs['approve'].approverNumber = approverNumber
+						}
+					}else{
+					this.userList.forEach((item,index)=>{
+						if (JSON.parse(that.$Route.query.applyCcPersonList)[0].ccNumber == item.fnumber) {
+							that.userIndex = index;
+						}
+					})
+					}
+					
 				}
 			});
 		},
